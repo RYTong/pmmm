@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" /><xi:include href="macros.html" />
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>Untitled Document</title>
+  <script type="text/javascript">
+    function test()
+{
+  var name = $("input[name='user']").val()
+  var str = "确定要删除{"+name+"}吗?"
+  if(!confirm(str)) return false;
+}
+  </script>
+  </head>
+  <body>
+    <div id="content" py:if="pm_is_project_admin">
+      <h1>Information for user ${pm_user}</h1>
+
+      <h2>Change password</h2>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th align='left'>NOTE: password will show up on screen.</th></tr>
+        </thead>
+ 	<tbody>
+	  <tr><td>
+	    <form method="post" action="${pm_href}/user/cw/${pm_user}" accept-charset="utf-8">
+	      Password: <input type="password" name="pwd1"/>
+	      Verify: <input type="password" name="pwd2"/>
+	      <input type="submit" name="submit" value="Change Password"/>
+	    </form>
+	   </td></tr>
+	</tbody>
+      </table>
+      <div id="du_pp_op" py:if="is_trac_admin">
+      <h2>Delete user</h2>
+      <form method="post" action="${pm_href}/user/du" accept-charset="utf-8">
+        <input type="hidden" name="project" value="${pm_proj}"/>
+        <input type="hidden" name="user" value="${pm_user}"/>
+        <input type="submit" onclick="return test()" name="submit" value="Delete"/>
+      </form>
+
+      <h2>Participating Projects</h2>
+      <form action="${pm_href}/hours/dpforU/${pm_user}" method="POST" accept-charset="utf-8">
+	<table class="listing">
+	  <tbody>
+	    <tr><td>
+		<span py:for="p in pm_proj_in">
+		  <input type="checkbox" name="proj" value="${p}"/>${p}
+		</span>
+	    </td></tr>
+	    <tr><td>
+		<input type="submit" name="submit" value="Remove Projects"/>
+	    </td></tr>
+	  </tbody>
+	  </table>
+      </form>
+      <h2>Other Projects</h2>
+      <form action="${pm_href}/hours/apforU/${pm_user}" method="POST" accept-charset="utf-8">
+	<table class="listing">
+	  <tbody>
+	    <tr><td>
+		<span py:for="p in pm_proj_out">
+		  <input type="checkbox" name="proj" value="${p}"/>${p}
+		</span>
+	    </td></tr>
+	    <tr><td>
+		<input type="submit" name="submit" value="Add Projects"/>
+	    </td></tr>
+	  </tbody>
+	</table>
+   </form>
+   </div>
+   </div>
+  </body>
+</html>

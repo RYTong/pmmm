@@ -1,0 +1,35 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+<script type="text/javascript">
+  function test()
+{
+  if(!confirm('确认删除吗？')) return false;
+}
+</script>
+  <title>list all departments</title>
+</head>
+
+<body>
+  <div id="content">
+  <xi:include href="pm_head.html"/>
+   <fieldset>
+       <legend>部门列表</legend>
+   <form method="post" action="${pm_href}/hours/delDep">
+   <py:for each="u in depIds">
+       <input type="checkbox" name="depId" value="${u}"/>[<a href="${pm_href}/hours/listDepUsers/${u}">${deps[u]}</a>]
+   </py:for><br/>
+   <input type="submit" onclick="return test()" value="删除选中部门"/>
+   </form>
+   </fieldset>
+  </div>
+</body>
+</html>

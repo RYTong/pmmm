@@ -1,0 +1,43 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>list proj users</title>
+</head>
+<body>
+  <xi:include href="pm_head.html"/>
+  <div id="content">
+<fieldset>
+      <form action="${pm_href}/hours/dpm" method="post">
+     <input type="hidden" name="proj" value="${proj}"/>
+     <h1 style="color:red">${proj}</h1>
+     <p style="color:#ff9999">project managers</p>
+     <py:for each="u in managers">
+      <py:for each="us in u">
+     <input type="checkbox" name="manager" value ="${u}"/>
+        ${dictU[us]}
+     </py:for></py:for><br/>
+     <input type="submit" name="submit" value="delete"/>
+     </form>
+     <form action="${pm_href}/hours/du" method="POST">
+     <p style="color:#ff9999">project users</p>
+     <input type="hidden" name="proj" value="${proj}"/>
+     <py:for each="u in result">
+      <py:for each="un in u">
+     <input type="checkbox" name="user" value ="${u}"/>
+        ${dictU[un]}
+     </py:for></py:for><br/>
+      <input type="submit" name="submit" value="addManager"/>
+     </form>
+</fieldset>
+  </div>
+</body>
+
+</html>

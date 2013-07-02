@@ -1,0 +1,114 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+      function test()
+      {
+        if(!confirm('该操作只需配置一次，执行此操作将清空之前的数据，是否确定要执行此操作？')) return false;
+      }
+      function test1()
+      {
+        if(!confirm('是否确定要执行同步数据库操作？')) return false;
+      }
+    jQuery(function(){
+
+       $("#button1").click(function(){
+            $("#inputContent").append('<input type="text" name="workType"/><br/>')
+       })
+
+       $("#configButton").click(function(){
+           $("#inputContent input").each(function(i){
+                     if($("#inputContent input").eq(i).val()==""){
+                         $("#inputContent input").eq(i).removeAttr("name");
+                     }
+           })
+           $("#configForm").submit()
+       })
+    })
+       jQuery(function(){
+
+       $("#button2").click(function(){
+            $("#inputContent2").append('<input type="text" name="financeType"/><br/>')
+       })
+
+       $("#configButton2").click(function(){
+           $("#inputContent2 input").each(function(i){
+                     if($("#inputContent2 input").eq(i).val()==""){
+                         $("#inputContent2 input").eq(i).removeAttr("name");
+                     }
+           })
+           $("#configForm2").submit()
+       })
+    })
+       
+       jQuery(function(){
+
+       $("#button3").click(function(){
+            $("#inputContent3").append('<input type="text" name="user_work_type"/><br/>')
+       })
+
+       $("#configButton3").click(function(){
+           $("#inputContent3 input").each(function(i){
+                     if($("#inputContent3 input").eq(i).val()==""){
+                         $("#inputContent3 input").eq(i).removeAttr("name");
+                     }
+           })
+           $("#configForm3").submit()
+       })
+    })
+</script>
+      <title>configuration</title>
+</head>
+<body>
+      <xi:include href="pm_head.html"/>
+  <div id="content">
+   <fieldset>
+   <legend>同步数据配置</legend>
+   <ul>
+       <li><a href="${pm_href}/hours/Synchronous" onclick="return test1()">同步.htaccess文件和数据库</a>(首先删除proj_user表中所有数据,然后将.htaccess文件中project和proj_user写入proj_user表)</li>
+       <li><a href="${pm_href}/hours/project_proj_user">同步project表与proj_user表用户</a>(查询project表中的proj_manager_name是否在proj_user,若不在,删除project表中此人的所有数据)</li>
+       <li><a href="${pm_href}/hours/listProject">删除项目以及添加/删除项目经理</a></li>
+       <li><a href="${pm_href}/hours/listWorkType">删除工作类型</a></li>
+       <li><a href="${pm_href}/hours/writeProjAndUser" onclick="return test()">将项目和用户写入数据库</a>(首先删除user表和proj_info中的所有数据,然后将.htaccess文件中数据写入user表和proj_info中)</li>
+       <li><a href="${pm_href}/hours/exportUserData">导出用户数据</a></li>
+       <li><a href="${pm_href}/hours/listUserZh">添加或删除人员或项目中文名、添加离职用户</a></li>
+       <li><a href="${pm_href}/hours/addDepView">添加或删除部门、部门详细信息维护</a></li>
+       <li><a href="${pm_href}/hours/lufd">删除或设置离职用户</a></li>
+       <li><a href="${pm_href}/hours/userlevel">用户级别维护</a></li>
+       <li><a href="${pm_href}/hours/usersalary">用户工资维护</a></li>
+       <li><a href="${pm_href}/hours/usertype">员工岗位维护</a></li>
+       <form id="configForm" action="${pm_href}/hours/addWorkType" method="POST">
+       添加工作类型：<br/>
+           <div id="inputContent">
+           <input type="text" name="workType"/><br/>
+           </div>
+       <input type="button" id="button1" value="继续添加"/>
+       <input type="button" id="configButton" value="提交"/>
+       </form>
+      <form id="configForm2" action="${pm_href}/hours/addfinanceType" method="POST">
+       添加财务类型：<br/>
+           <div id="inputContent2">
+           <input type="text" name="financeType"/><br/>
+           </div>
+       <input type="button" id="button2" value="继续添加"/>
+       <input type="button" id="configButton2" value="提交"/>
+       </form>
+       <form id="configForm3" action="${pm_href}/hours/adduserworkType" method="POST">
+       员工岗位类型：<br/>
+           <div id="inputContent3">
+           <input type="text" name="user_work_type"/><br/>
+           </div>
+       <input type="button" id="button3" value="继续添加"/>
+       <input type="button" id="configButton3" value="提交"/>
+       </form>
+   </ul>
+   </fieldset>
+  </div>
+</body>
+</html>

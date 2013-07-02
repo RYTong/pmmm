@@ -1,0 +1,53 @@
+<!DOCTYPE
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+<head>
+    <title>User Salary</title>
+</head>
+<body>
+    <xi:include href="pm_head.html"/>
+<fieldset>
+ <legend style="color:red">添加员工工资</legend>
+ <form action="${pm_href}/hours/addUsersalary" method="post">
+ 用户:<br/>
+ <py:for each="u in nosalaryusers">
+ ${u[0]}<input type="hidden" value="${u[1]}" name="rid"/><input style="width:60px" type="text" name="salary" value=""/>
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+ <legend style="color:red">删除用户工资</legend>
+ <form action="${pm_href}/hours/updateUsersalary" method="post">
+ 用户:<br/>
+ <py:for each="u in alluser">
+    <py:for each="us in u">
+     <input type="checkbox" name="user" value="${u}"/>${dictU[us]}
+     </py:for>
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+ <legend style="color:red">在职用户工资详情(此处工资不可编辑，如若修改员工工资请先在“删除员工工资”中删除员工，然后在"添加员工工资"处添加)</legend>
+ <py:for each="u in salaryusers">
+    <py:for each="us in u">
+     ${dictU[us]}-[${dictS[us]}]
+     </py:for>
+ </py:for><br/>
+</fieldset>
+<fieldset>
+ <legend style="color:red">离职用户工资详情</legend>
+ <py:for each="u in leofsalaryusers">
+    <py:for each="us in u">
+     ${dictU[us]}-[${dictS[us]}]
+     </py:for>
+ </py:for><br/>
+</fieldset>
+</body>
+</html>

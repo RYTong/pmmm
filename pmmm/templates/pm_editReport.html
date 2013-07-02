@@ -1,0 +1,139 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+$(function(){
+    $(".milestone").eq(0).css("display","inline");
+    $(".milestone").eq(0).find("select").attr("name","milestone");
+    $("input#button").click(function(){
+        var hour=$("#proj_hour").val()
+        var reg= new RegExp("^(([0-9]+\\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\\.[0-9]+)|([0-9]*[1-9][0-9]*))$");
+        var h = hour.split(".")[1]
+        if(reg.test(hour)){
+            if(typeof(h)=='undefined'){
+             $("#reportForm").submit()
+            }else if(h=="5"){
+             $("#reportForm").submit()
+            }else{
+              alert("请正确填写工作时间")
+            }
+        }else{
+            alert("请正确填写工作时间")
+        }
+
+    });
+     var va1=$("#proj1").val()
+
+   $("#proj option").each(function(i){
+       var va2 = $("#proj option").eq(i).val();
+       if (va1==va2){
+            $("#proj option").eq(i).attr("selected","selected");
+       }
+   })
+   $("#proj").bind("myEvent",function(){
+
+      var i=$("#proj :selected").index()
+      $(".milestone").each(function(){
+          $(this).css("display","none");
+          $(this).find("select").removeAttr("name");
+      })
+      $(".milestone").eq(i).css("display","inline");
+      $(".milestone").eq(i).find("select").attr("name","milestone");
+
+    })
+   $("#proj").trigger("myEvent");
+   var vam1 = $("#miles1").val()
+   $("select[name='milestone'] option").each(function(i){
+       var vam2 = $("select[name='milestone'] option").eq(i).val();
+       if (vam1==vam2){
+            $("select[name='milestone'] option").eq(i).attr("selected","selected");
+       }
+   })
+   $("#proj").change(function(){
+
+      var i=$("#proj :selected").index()
+      $(".milestone").each(function(){
+          $(this).css("display","none");
+          $(this).find("select").removeAttr("name");
+      })
+      $(".milestone").eq(i).css("display","inline");
+      $(".milestone").eq(i).find("select").attr("name","milestone");
+
+   })
+   var vaw1 = $("#workt1").val()
+   $("#proj_type option").each(function(i){
+       var vaw2 = $("#proj_type option").eq(i).val();
+       if (vaw1==vaw2){
+            $("#proj_type option").eq(i).attr("selected","selected");
+       }
+   })
+   $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+});
+})
+</script>
+    <title>editReport</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+<fieldset>
+<legend>编辑工时</legend>
+<form id="reportForm" action="${pm_href}/hours/ers" method="post">
+  <div class="main_report" style="margin:0 auto">
+
+   项目选择：<select name="proj" id="proj">
+
+               <py:for each="pn in proj_names">
+		 <py:for each="p in pn">
+               <option  value="${p}">${dictP[p]}</option>
+	         </py:for>
+               </py:for>
+            </select>
+            <input type="hidden" value="${proj1}" id="proj1"/>
+   <py:for each="mss in milestones">
+      <div style="display:none" class="milestone">
+   里程碑：<select>
+              <py:for each="ms in mss">
+               <py:for each="m in ms">
+                 <option value="${m}">${m}</option>
+               </py:for>
+              </py:for>
+          </select><br/>
+      </div>
+   </py:for>
+     <input type="hidden" value="${milestone1}" id="miles1"/>
+   选择工作类型：<select name="proj_type" id="proj_type">
+                    <py:for each="pt in proj_types">
+                      <option value="${pt}">${pt}</option>
+                    </py:for>
+                 </select><br/>
+      <input type="hidden" value="${work_type1}" id="workt1"/>
+   填写工作时间：日期：<input readonly="readonly" type="text" style="width:85px" name="proj_date" id="inputDate" class="inputDate" value="${work_date}"/> 时间：<input style="width:50px;" type="text" id="proj_hour" name="proj_hour" value="${work_time}"/>小时 <span style="color:blue">*时间精确到0.5小时*</span><br/>
+      <input type="hidden" name="rowid" value="${rowid}"/>
+   备注：<textarea name="userRemarks">${userInfo}</textarea>
+   经理反馈信息：<textarea readonly="readonly" >${managerInfo}</textarea>
+   <input type="button" id="button" value="提交"/>
+   </div>
+   </form>
+ </fieldset>
+</body>
+</html>

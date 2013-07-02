@@ -1,0 +1,81 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+    <title>pmmm check</title>
+<script type="text/javascript">
+    $(function(){
+         $("tbody tr").each(function(i){
+          var tdate= $("tbody tr").eq(i).find("td").eq(3).text();
+          var weekDay =new Date(Date.parse(tdate.replace(/-/g,   "/")))  //在firefox，chrome，opera中直接在new Date()中带参数即可，在ie和safari中采用改方法解决结果为NaN的问题
+          weekDay=weekDay.getDay()
+          var weekDay1 = {"0":"日","1":"一","2":"二","3":"三","4":"四","5":"五","6":"六"}[weekDay]
+          var newDate = tdate+"["+weekDay1+"]"
+          $("tbody tr").eq(i).find("td").eq(3).text(newDate)
+      })
+      $("tbody tr").each(function(i){
+          var username = $("tbody tr").eq(i).find("td").eq(1).text();
+          if(username==""){
+              var eNname = $("tbody tr").eq(i).find("td").eq(1).children("input[name='user']").val();
+              $("tbody tr").eq(i).find("td").eq(1).text(eNname)
+          }
+      })
+      $("tbody tr:even").css("background-color","#f1f1f1");
+        $("#checkButton").click(function(){
+            if(confirm("确定要提交吗？")){
+                $("#checkForm").submit()
+            }
+        })
+ });
+
+  function test()
+{
+  if(!confirm('确认删除吗？')) return false;
+}
+</script>
+</head>
+<body style="width:100%;">
+    <xi:include href="pm_head.html"/>
+  <form id="checkForm" action="${pm_href}/hours/prc" method="POST">
+       <table style="width:100%;table-layout:fixed;">
+           <thead align="center">
+            <tr>
+            <td >项目</td>
+            <td >姓名</td>
+            <td >工作类型</td>
+            <td style="width:8%">工作日期</td>
+            <td >工作时间</td>
+            <td style="width:8%">工时填写时间</td>
+            <td style="width:6%">里程碑</td>
+            <td style="width:24%">审核状态</td>
+            <td style="width:22%">工作内容</td>
+            <td style="width:14%">反馈信息</td>
+            </tr>
+           </thead>
+           <tbody align="center">
+          <py:for each="rs in re_result1">
+              <tr>
+                  <td style="word-wrap:break-word;">${dictP[rs.pn]}</td>
+                  <td style="word-wrap:break-word;">${dictU[rs.un]}<input name="user" type="hidden" value="${rs.un}"/></td>
+                  <td style="word-wrap:break-word;">${rs.wt}</td>
+                  <td style="word-wrap:break-word;">${rs.wd}</td>
+                  <td style="word-wrap:break-word;">${rs.wtl}小时</td>
+                  <td style="word-wrap:break-word;">${rs.wti}</td>
+                  <td style="word-wrap:break-word;">${rs.mt}</td>
+                  <td style="word-wrap:break-word;"><input type="hidden" name="rowid" value="${rs.rw}"/><input type="radio" checked="checked" name="check_status${rs.rw}" value="0"/>未审核<input type="radio" name="check_status${rs.rw}" value="1"/>审核通过<input type="radio" name="check_status${rs.rw}" value="2"/>内容不符<input type="radio" name="check_status${rs.rw}" value="3"/>时间不符</td>
+                  <td style="word-wrap:break-word;">${rs.uf}</td>
+                  <td style="word-wrap:break-word;"><input type="text" name="manaRemarks${rs.rw}"/></td>
+              </tr>
+          </py:for>
+         </tbody>
+       </table><br/>
+  <input style="margin:0 auto;" id="checkButton" type="button" value="提交"/>
+  </form>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+<head>
+    <title>Configuration</title>
+</head>
+<body>
+<div id="content">
+<xi:include href="pm_head.html"/>
+<fieldset>
+ <legend style="color:blue">用户工作类型维护</legend>
+ <form action="${pm_href}/hours/addUserworkType" method="post">
+ <span style="font-size:20px;">已编辑人员：</span><br/>
+    <py:for each="u in user">
+   <input type="checkbox" name="rid" value="${u[0]}"/>${u[1]}--<span class="username" style="color:blue">${dictU[u[0]]}</span>
+   </py:for><br/>
+ <span style="font-size:20px;">未编辑人员：</span><br/>
+ <py:for each="u in users">
+   <input type="checkbox" name="rid" value="${u[0]}"/><span class="username">${u[1]}</span>
+   </py:for><br/>
+ <py:for each="uwt in user_work_type">
+   <input type="submit" name="type" value="${uwt[1]}"/>
+  </py:for><input type="submit" name="type" value="未编辑"/><br/> 
+ </form>
+</fieldset>
+</div>
+</body>
+</html>

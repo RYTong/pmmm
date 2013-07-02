@@ -1,0 +1,278 @@
+<!DOCTYPE 
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+	xmlns:xi="http://www.w3.org/2001/XInclude" 
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Project Information</title>
+  </head>
+    
+  <body>
+    <xi:include href="pm_head.html"/>
+    <div id="content">
+      <h2>Summary</h2>
+      <div>
+        Project ${pm_proj} has ${len(pm_modlist)}
+        module<py:if test="len(pm_modlist) > 1">s</py:if>:
+        <b>${', '.join(pm_modlist)}</b><br/>
+        Access URL root: ${pm_modurl}
+      </div>
+
+      <div py:if="pm_is_project_admin">
+        <h2>Actions</h2>
+        <table class="listing pmmm-action">
+          <thead>
+            <tr><th align='left'>
+            Add or clone a new module. <a href="pm_projinfo.html#modspec">Help about
+      module specification strings.</a>
+            </th></tr>
+          </thead>
+      	  <tbody>
+            <form method="post" action="${pm_href}/project/am" accept-charset="utf-8">
+	      <tr><td>
+	      	  <input type="hidden" name="project" value="${pm_proj}"/>
+                  Module name: <input type="text" name="name"/>
+                  <input type="submit" name="submit" value="Add"/>
+	      </td></tr>
+            </form>
+ 	  </tbody>
+        </table>
+
+        <table class="listing pmmm-action">
+          <thead><tr>
+            <th align="left">Make a new release</th>
+          </tr></thead>
+          <tbody>
+            <form method="post" action="${pm_href}/project/mr" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <tr><td>
+                Release version: <input type="text" name="version"/>
+              </td></tr>
+              <tr><td>
+                Branch (optional):
+                <input type="text" name="branch" style="width:300px"/>
+              </td></tr>
+              <tr><td>
+                <input type="submit" name="submit" value="Make Release"/>
+              </td></tr>
+            </form>
+          </tbody>
+        </table>
+
+        <table class="listing pmmm-action">
+          <thead><tr>
+            <th align="left">Make a new branch</th>
+          </tr></thead>
+          <tbody>
+            <form method="post" action="${pm_href}/project/mb" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <tr><td>Branch name: <input type="text" name="name"/></td></tr>
+			  <tr><td>
+                Release (optional):
+                <input type="text" name="release" style="width:300px"/>
+              </td></tr>
+              <tr><td>
+                <input type="submit" name="submit" value="Make Branch"/>
+              </td></tr>
+            </form>
+          </tbody>
+        </table>
+
+        <table class="listing pmmm-action">
+          <thead><tr>
+            <th colspan="2" align="left">Clone This Project</th>
+          </tr></thead>
+          <tbody>
+            <form method="post" action="${pm_href}/project/cp" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <tr><td>New project name: 
+                <input type="text" name="name"/></td></tr>
+              <tr><td>
+                Modules (comma-separated, default to all):<br/>
+	        <input type="text" name="modules" style="width:300px"/>
+              </td></tr>
+              <tr><td>
+                Cloning from branch (optional):
+                <input type="text" name="branch"/>
+              </td></tr>
+              <tr><td>
+                <input type="submit" name="Clone Project"/>
+              </td></tr>
+            </form>
+          </tbody>
+        </table>
+         <!-- End of Admin Section -->
+     </div>
+
+      <h2>Modules</h2>
+      URL: ${pm_modurl}<br/>
+     <table class="listing pmmm-action">
+       <thead><tr>
+          <th colspan="3">${', '.join(pm_modlist)}</th>
+        </tr></thead>
+        <tbody>
+          <py:for each="m in pm_modlist">
+          <tr>
+            <td><a href="${pm_href}/project/minfo/${pm_proj} ${m}">${m}</a></td>
+            <td py:if="pm_is_project_admin">
+            <form method="post" action="${pm_href}/project/dm"
+                  accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <input type="hidden" name="module" value ="${m}"/>
+              <input type="submit" name="submit" value="Delete"/>
+            </form>
+            </td>
+            <td>
+            <form method="post" action="${pm_href}/project/ae" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <input type="hidden" name="module" value ="${m}"/>
+              Name: <input type="text" name="name"/>
+             <input type="submit" name="submit" value="Experiment"/>
+	     <input type="submit" name="submit" value="Rename"/>
+            </form>
+            </td>
+          </tr>
+          </py:for>
+        </tbody>
+      </table>
+
+      <h2>Experiments</h2>
+      
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th colspan="3">URL: ${pm_exprurl}</th></tr>
+          <tr><th colspan="3">${', '.join(pm_experiments)}</th></tr>
+        </thead>
+        <tbody>
+          <py:for each="m in pm_experiments">
+          <tr>
+            <td>${m}</td>
+            <td>
+            <form method="post" action="${pm_href}/project/de" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <input type="hidden" name="module" value ="${m}"/>
+              <input type="submit" name="submit" value="Delete"/>
+            </form>
+            </td>
+            <td>
+            <form method="post" action="${pm_href}/project/ce" accept-charset="utf-8">
+              <input type="hidden" name="project" value="${pm_proj}"/>
+              <input type="hidden" name="module" value ="${m}"/>
+              Name: <input type="text" name="name"/>
+             <input type="submit" name="submit" value="Clone"/>
+            </form>
+            </td>
+          </tr>
+          </py:for>
+        </tbody>
+      </table>
+
+      <div py:if="pm_is_project_admin">
+      <h2>Manage Users</h2>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th align='left'>Project Users</th></tr>
+        </thead>
+        <tbody>
+          <form id="addManagerForm" method="post" action="${pm_href}/hours/duforP" accept-charset="utf-8">
+            <input type="hidden" name="project" value="${pm_proj}"/>
+            <tr><td>
+              <span py:for="u in pm_users">
+                <input type="checkbox" name="user" value ="${u}"/>
+                <a href="${pm_href}/user/info/${u}">${u}</a>
+              </span>
+            </td></tr>
+            <tr><td>
+              <input type="submit" name="submit" value="Remove"/>
+            </td></tr>
+          </form>
+        </tbody>
+      </table>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th align='left'>Other Users</th></tr>
+        </thead>
+        <tbody>
+          <form method="post" action="${pm_href}/hours/auforP" accept-charset="utf-8">
+            <input type="hidden" name="project" value="${pm_proj}"/>
+            <tr><td>
+              <span py:for="u in pm_not_users">
+                <input type="checkbox" name="user" value ="${u}"/>
+                <a href="${pm_href}/user/info/${u}">${u}</a>
+              </span>
+            </td></tr>
+            <tr><td>
+              <input type="submit" name="submit" value="Add"/>
+            </td></tr>
+          </form>
+        </tbody>
+      </table>
+      </div>
+      
+      <h2>Release engineering</h2>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th>Branches</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><py:for each="b in pm_branches">${b}　</py:for></td>
+          </tr>
+        </tbody>
+        <thead>
+          <tr><th>Releases</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><py:for each="r in pm_releases">${r}　</py:for></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <hr/>
+      <h2><a name="modspec">Module specification strings</a></h2>
+      <p>
+  The module list is a list of "mod_spec" strings, separated by ','. Each 
+  mod_spec string contains a source module spec, and optioanlly a destination
+  module spec.  The source module spec may be:
+
+<ol>
+ <li> relative path to the /proj, </li>
+ <li> absolute path,  </li>
+ <li> URL (http or https). </li> 
+</ol>
+
+  It may contain a destination spec, separated by '='.  Destination spec is the
+  path to the module to be created, and it is the path relative to the current
+  project.
+
+  Examples mod_spec strings are:
+<ol>
+<li>  <pre>boc/jbulb,boc2/jbulb=jbulb-boc2</pre>
+      This will create two modules, jbulb from /proj/boc/jbulb, and jbulb-boc2
+      from /proj/boc2/jbulb.</li>
+<li> <pre> boc2/jbulb:12=jbulb_test</pre>
+     This allows a revision number from which the source module is cloned.</li>
+<li> <pre>https://dev/hg/proj/boc/jbulb=jbulb.test</pre>
+      This clones source module from the specified URL to a module jbulb.test
+      in the specified project.</li>
+</ol>
+
+  In order to make this work, one must make sure that ~/.hgrc is correctly
+  configured so that we can access remote repo using pre-defined identities. 
+  For example, if we access remote server https://devvm, ~/.hgrc must contain
+  the following section:
+<pre>
+    [auth]
+    devvm.prefix = https://devvm
+    devvm.username = my_name
+    devvm.password = my_pwd
+</pre>
+      </p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+  <head>
+    <title>Project Listing</title>
+  </head>
+  <body>
+    <div>
+    <fieldset>
+     <legend>融易通工时系统目录</legend>
+     <ul style="font-size:15px;color:red">
+         <li type="square"><a href="${pm_href}/hours/pqlist">工时记录查询</a></li>
+         <li type="square"><a href="${pm_href}/hours/prlist">填报工时</a></li>
+	 <li type="square"><a href="${pm_href}/hours/pwlist">发送周报</a></li>
+         <li type="square" py:if="pm_is_project_admin or pm_is_dep_admin"><a href="${pm_href}/hours/pclist">工时审核</a></li>
+         <li type="square" py:if="pm_is_project_admin or pm_is_dep_admin"><a href="${pm_href}/hours/palist">统计分析</a></li>
+	 <li type="square" py:if="pm_is_project_admin or pm_is_dep_admin"><a href="${pm_href}/hours/import_view">import excel</a></li>
+	 <li type="square" py:if="is_trac_admin"><a href="${pm_href}/hours/expend">项目财务填报</a></li>
+	 <li type="square" py:if="is_trac_admin"><a href="${pm_href}/hours/pglist">系统配置</a></li>
+     </ul>
+    </fieldset>
+    </div>
+    <div id="content">
+      <h1>Project Listing</h1>
+
+     <div id="pm-my-projects">
+        <h2>Manage Projects</h2>
+        <div>
+          Total ${len(pm_modlist)} projects.
+          Click on any project to edit its settings or to clone a new
+          project from it.
+        </div>
+        <p/>
+
+	<table class="listing" py:if="is_trac_admin">
+	  <thead>
+      	    <tr><th>
+      	  	Create new project.
+      	    </th></tr>
+	  </thead>
+      	  <tbody>
+	    <form method="post" action="${pm_href}/hours/np" accept-charset="utf-8">
+	      <tr>
+                <td>
+	          <input type="hidden" name="project" value="${pm_proj}"/>
+              Name: <input type="text" name="name"/>
+              项目中文名: <input type="text" name="nameZh"/>
+	          ModuleSpec: <input type="text" name="modules"/>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Users:
+                  <py:for each="u in pm_users">
+	            <input type="checkbox" name="user" value="${u}"/>${u}
+                  </py:for>
+                  <br/>
+                </td>
+              </tr>
+              <tr>
+                <td>
+	          <input type="submit" name="submit" value="New Project"/>
+                </td>
+              </tr>
+	    </form>
+	  </tbody>
+	</table>
+
+        <h3>My Projects</h3>
+        <table class="listing">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Modules</th>
+              <th py:if="pm_is_project_admin">Users</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr py:for="p in pm_modlist">
+              <td><a href="${pm_href}/project/info/${p[0]}">${p[0]}</a></td>
+              <td>${', '.join(p[1])}</td>
+              <td py:if="pm_is_project_admin">${', '.join(p[2])}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="pm-project-actions" py:if="pm_is_project_admin">
+        <div id="pm-mu" py:if="is_trac_admin">
+        <h2>Managing Users</h2>
+        <table class="listing">
+          <thead>
+            <tr><th>
+              Add a new user.
+            </th></tr>
+          </thead>
+      	  <tbody>
+	    <tr><td>
+	        <form method="post" action="${pm_href}/hours/au" accept-charset="utf-8">
+	          <input type="hidden" name="project" value="${pm_proj}"/>
+	          Username: <input type="text" name="user"/>
+	          Password: <input type="text" name="passwd"/>
+              中文名: <input type="text" name="usernameZh"/>
+	          <input type="submit" name="submit" value="Add User"/>
+	        </form>
+	    </td></tr>
+          </tbody>
+        </table>
+		</div>
+        <table class="listing">
+          <thead>
+            <tr><th>
+              Click on a user name to manage properties, change project
+              roles, and to delete users.
+            </th></tr>
+          </thead>
+          <tbody><tr>
+	      <td>
+              <py:for each="u in pm_users">
+	          <a href="${pm_href}/user/info/${u}">${u}</a>
+              </py:for>
+	      </td>
+	  </tr></tbody>
+        </table>
+      </div>
+    </div>
+      <h2>Change password</h2>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th align='left'>NOTE: password will show up on screen.</th></tr>
+        </thead>
+ 	<tbody>
+	  <tr><td>
+	    <form method="post" action="${pm_href}/user/cw/${pm_user}" accept-charset="utf-8">
+	      Password: <input type="password" name="pwd1"/>
+	      Verify: <input type="password" name="pwd2"/>
+	      <input type="submit" name="submit" value="Change Password"/>
+	    </form>
+	   </td></tr>
+	</tbody>
+      </table>
+  </body>
+</html>

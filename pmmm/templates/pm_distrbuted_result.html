@@ -1,0 +1,30 @@
+<!DOCTYPE
+    html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>query result</title>
+</head>
+
+<body>
+  <div id="head" style="margin-top:0;">
+  <xi:include href="pm_head.html"/>
+  </div>
+  <div id="content">
+   <fieldset>
+      <legend>未填写工时人员列表</legend>
+   <ul>
+   <py:for each="user in lostDay">
+     <li type="square" style="color:blue;float:left;margin-right:20px;">${user}</li>
+   </py:for>
+   </ul>
+   </fieldset>
+  </div>
+</body>
+
+</html>

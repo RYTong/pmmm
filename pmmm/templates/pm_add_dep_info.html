@@ -1,0 +1,68 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>add department info</title>
+</head>
+
+<body>
+<xi:include href="pm_head.html"/>
+  <div id="content">
+    <fieldset>
+       <legend>新建部门信息</legend>
+        <form method="post" action="${pm_href}/hours/addDepInfo" accept-charset="utf-8">
+	      <tr>
+                <td>
+              部门编号: <input type="text" name="depid"/>
+              部门名: <input type="text" name="depname"/>
+	      上属部门编号 <input type="text" name="depleadid"/>
+	      部门Email：<input type="text" name="depemail"/>
+                </td>
+              </tr>
+              <tr>
+                <td>
+	          <input type="submit" name="submit" value="New Department"/>
+                </td>
+              </tr>
+	    </form>
+    </fieldset>
+    <fieldset>
+       <legend>编辑部门信息(点击部门名编辑部门员工信息)</legend>
+      <py:for each="dep in list2">
+	 <table class="listing">
+         <thead>
+	 <tr>
+              <td style="width:20px">${dep[0]}</td>
+              <td style="width:150px"><a href="${pm_href}/hours/listDepUsers/${dep[0]}">${', '.join(dep[1])}</a></td>
+	      <td>${', '.join(dep[2])}</td>     
+         </tr>
+	 </thead>
+	 </table>
+      </py:for>
+    </fieldset>
+        <fieldset>
+       <legend>未编辑部门人员</legend>
+       <py:for each="un in nodepusers">
+	<py:for each="u in un">
+	${dictUser[u]}</py:for></py:for>
+    </fieldset>
+    <fieldset>
+       <legend>部门列表</legend>
+   <form method="post" action="${pm_href}/hours/delDep">
+   <py:for each="u in list2">
+       <input type="checkbox" name="depId" value="${u[0]}"/>${', '.join(u[1])}
+   </py:for><br/>
+   <input type="submit" onclick="return test()" value="删除选中部门"/>
+   </form>
+   </fieldset>
+  </div>
+</body>
+
+</html>

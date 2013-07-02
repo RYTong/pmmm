@@ -1,0 +1,36 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+ function exportWhichTable(){
+var t2=$("#table2").css("display");
+exportTableToExcel('table2');
+     
+ }
+</script>
+    <title>view report form</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+<div><span style="color:red;font-size:16px;">项目名称：${projName}</span><br/>  <span>从：${startTime}</span><span>到：${endTime}</span></div>
+<input type="hidden" value="${anaWay}" id="anaWay"/>
+<table id="table2" class="listing">
+    <tr><td>工作类型</td><td>工作时间(小时)</td></tr>
+   <py:for each="u in ids">
+    <tr>
+         <td>${dictN[u]}</td>
+         <td class="view">${dictH[u]}</td>
+     </tr>
+    
+    </py:for>
+  </table>
+<input type="button" onclick="exportWhichTable()" value="exportExcel"/><a href="${pm_href}/hours/palist">返回继续统计</a>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+$(function(){
+     var va1=$("#proj1").val()
+   $("#proj option").each(function(i){
+       var va2 = $("#proj option").eq(i).val();
+       if (va1==va2){
+            $("#proj option").eq(i).attr("selected","selected");
+       }
+   })
+   $("#proj").bind("myEvent",function(){
+
+      var i=$("#proj :selected").index()
+    })
+   $("#proj").trigger("myEvent");
+   $("#proj").change(function(){
+
+      var i=$("#proj :selected").index()
+   })
+   var vaw1 = $("#workt1").val()
+   $("#expend_type option").each(function(i){
+       var vaw2 = $("#expend_type option").eq(i).val();
+       if (vaw1==vaw2){
+            $("#expend_type option").eq(i).attr("selected","selected");
+       }
+   })
+   $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+});
+})
+</script>
+    <title>editReport</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+<fieldset>
+<legend>编辑项目财务信息</legend>
+<form  action="${pm_href}/hours/editexpend" method="post">
+
+   项目选择：<select name="proj" id="proj">
+               <py:for each="pn in proj_names">
+		 <py:for each="p in pn">
+               <option  value="${p}">${dictP[p]}</option>
+	         </py:for>
+               </py:for>
+            </select>
+            <input type="hidden" value="${proj_name}" id="proj1"/>
+   财务类型：<select name="expend_type" id="expend_type">
+                    <py:for each="pt in expend_types">
+                      <option value="${pt}">${pt}</option>
+                    </py:for>
+             </select>
+             <input type="hidden" value="${expend_type}" id="workt1"/><br/>
+    金额:<input type="text" name="expend" value="${expend}"/>
+   日期：<input readonly="readonly" type="text" style="width:85px" name="time" id="inputDate" class="inputDate" value="${time}"/> 
+      <input type="hidden" name="rowid" value="${rowid}"/><br/>
+   备注：<textarea name="Remarks">${remarks}</textarea>
+   <input type="submit"  value="提交"/>
+   </form>
+ </fieldset>
+</body>
+</html>

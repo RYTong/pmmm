@@ -1,0 +1,95 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>查询每日填写工时记录</title>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+    $("input[type='button']").click(function(){
+          $("#queryLostHour").submit();
+    })
+    var date=new Date();
+    var year =date.getFullYear()
+    var month=date.getMonth()+1
+    var day=date.getDate()
+    if(day.toString().length==1){
+        day= "0"+day
+    }
+    if(month.toString().length==1){
+        month= "0"+month
+    }
+    var str=year+"-"+month+"-"+day
+    var str1=year+"-"+month+"-"+"01"
+    $("#inputDate").val(str1);
+    $("#inputDate1").val(str);
+    $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+    });
+   $('#inputDate1').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate1').val(),
+	current: $('#inputDate1').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate1').DatePickerSetDate($('#inputDate1').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate1').val(formated);
+
+			$('#inputDate1').DatePickerHide();
+
+	}
+  });
+})
+
+</script>
+</head>
+
+<body>
+  <div id="content">
+  <xi:include href="pm_head.html"/>
+  <fieldset>
+      <legend>按时间跨度查询未填写工时员工</legend>
+      <form id="queryLostHour" action="${pm_href}/hours/ajax" method="post">
+      <p>选择时间跨度:</p>
+      从:<input style="width:80px" readonly="readonly" name="startTime" type="text" id="inputDate" value=""/> 到:<input style="width:80px" name="endTime" readonly="readonly" type="text" id="inputDate1" value=""/><br/>
+      <input type="hidden" value="${auth}" name="employee"/>
+      <p>选择部门:</p>
+      <select id="depId" name="depId">
+      <py:for each="dep in depInfo">
+           <option value="${dep[0]}">${dep[1]}</option>
+      </py:for>
+      </select><br/>
+      <input type="button" value="查询" />
+      </form>
+      </fieldset>
+  </div>
+  <div>
+    <table>
+        <thead></thead>
+    </table>
+  </div>
+
+</body>
+</html>

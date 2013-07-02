@@ -1,0 +1,18 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/">
+<body>
+  <fieldset>
+      <li py:if="is_trac_admin" style="color:red;float:right;"><a  href="${pm_href}/hours/pglist">系统配置</a></li>
+      <li py:if="is_trac_admin" style="color:red;float:right;margin-right:20px;"><a href="${pm_href}/hours/expend">项目财务填报</a></li>
+      <li py:if="pm_is_project_admin or pm_is_dep_admin" style="color:red;float:right;margin-right:20px;"><a href="${pm_href}/hours/import_view">import excel</a></li>
+      <li py:if="pm_is_project_admin" style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/palist">统计分析</a></li>
+      <li py:if="pm_is_project_admin" style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/pclist">工时审核</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a href="${pm_href}/hours/pwlist">发送周报</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/prlist">填报工时</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/pqlist">工时记录查询</a></li>	      
+    </fieldset>
+</body>
+</html>

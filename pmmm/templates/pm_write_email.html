@@ -1,0 +1,46 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+  <title>send email</title>
+  <script type="text/javascript">
+ 
+  </script>
+</head>
+<body>
+  <xi:include href="pm_head.html"/>
+<fieldset>
+  <legend>编辑周报</legend>
+  <form  id="reportedit" action="${pm_href}/hours/sendreport" method="post">
+  收件人:<input style="width:230px" type="text" name="mail_rec" value="${mail_rec}"/>(多个收件人地址之间用","隔开)<br/>
+  主  题:<input readOnly="true" style="width:237px" type="text" name="theme" value="${username_zh} 周报(${startDate}:${t2})"/><br/>
+下周计划:<br/>
+        <textarea name="nextwork" cols="63" rows="9" style="margin-left:60px;">
+-------------------------------------------------------------
+下周计划:
+  
+  
+  
+  
+  
+  
+  ${times}
+-------------------------------------------------------------
+  ${username_zh}
+  </textarea><br/>
+  本周工作:<br/>
+        <textarea name="works" cols="63" rows="8" readOnly="true" style="margin-left:60px;">本周工作:
+<py:for each="rs in work">${rs.wd}|${dictP[rs.pj]}|${rs.wt}|${rs.wl}小时:
+${rs.wk}
+
+</py:for></textarea>       
+  <input type="submit" value="发送"/>
+  </form>
+</fieldset>
+</body>
+</html>

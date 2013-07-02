@@ -1,0 +1,57 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>list user for delete</title>
+  <script type="text/javascript">
+    function test()
+{
+
+  var str = "确定要删除或是修改选中的用户吗?"
+  if(!confirm(str)) return false;
+}
+  </script>
+</head>
+
+<body>
+  <div id="content">
+  <xi:include href="pm_head.html"/>
+  <fieldset>
+      <legend>删除用户</legend>
+  <form action="${pm_href}/hours/delDuser" method="POST">
+  <py:for each="result in results">
+  <input type="checkbox" name="users" value="${result[0]}"/><span class="username" style="color:blue">${result[1]}</span>
+  </py:for> <br/>
+  <input type="submit" onclick="return test()" value="提交"/>
+  </form>
+  </fieldset>
+  
+  <fieldset>
+      <legend>设置离职用户</legend>
+  <form action="${pm_href}/hours/setuserlo" method="POST">
+  <py:for each="result in user">
+  <input type="checkbox" name="users" value="${result[0]}"/><span class="username" style="color:blue">${result[1]}</span>
+  </py:for> <br/>
+  <input type="submit" onclick="return test()" value="提交"/>
+  </form>
+  </fieldset>
+  
+  <fieldset>
+      <legend>离职用户</legend>
+  <form action="${pm_href}/hours/setusernolo" method="POST">
+  <py:for each="result in result">
+  <input type="checkbox" name="users" value="${result[0]}"/><span class="username" style="color:blue">${result[1]}</span>
+  </py:for> <br/>
+  </form>
+  </fieldset>
+  </div>
+</body>
+
+</html>

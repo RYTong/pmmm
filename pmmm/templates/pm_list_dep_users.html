@@ -1,0 +1,112 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>list department users</title>
+<script type="text/javascript">
+    $(function(){
+       $("#button1").click(function(){
+           var lastIndex = $("#form1").attr("action").lastIndexOf("/")
+           var uri = $("#form1").attr("action").substring(0,lastIndex+1)
+           var url = $("#form1").attr("action").substring(0,lastIndex+1)+"addDepMana"
+           $("#form1").attr("action",url)
+           $("#form1").submit()
+
+       })
+       $("#button3").click(function(){
+           $("#form1").submit()
+       })
+       $("#button2").click(function(){
+          var lastIndex = $("#form1").attr("action").lastIndexOf("/")
+          var uri = $("#form1").attr("action").substring(0,lastIndex+1)
+          var url = $("#form1").attr("action").substring(0,lastIndex+1)+"addDepViceMana"
+          $("#form1").attr("action",url)
+          $("#form1").submit()
+       })
+
+    })
+</script>
+</head>
+<body>
+  <div id="content">
+    <xi:include href="pm_head.html"/>
+     <fieldset>
+       <legend>修改部门名</legend>
+       <tr>
+	<td>
+       原部门编号：<span style="color:red">${depId}</span>
+       原上属部门编号：<span style="color:red">${leaderdepId}</span>
+       原部门名称：<span style="color:red">${depName}</span>
+       原部门Email：<span style="color:red">${depemail}</span>
+	</td>
+       </tr>
+       
+       <form method="post" action="${pm_href}/hours/modifyDep">
+	<tr>
+	<td>
+        部门新名称：<input type="text" name="depName"/>
+	新上属部门编号：<input type="text" name="leaderdepId"/>
+	部门新Email：<input type="text" name="depemail"/>
+        <input type="hidden" value="${depId}" name="depId"/><br/>
+	<input type="submit" name="depaction" value="修改部门名"/><input type="submit" name="depaction" value="修改上属部门编号"/><input type="submit" name="depaction" value="修改部门Email"/>
+	</td>
+       </tr> 
+       </form>
+    </fieldset>
+     <fieldset>
+     <legend>添加或删除部门经理及员工</legend>
+     <form action="${pm_href}/hours/delDepMana" method="post">
+     <input type="hidden" name="dep" value="${depId}"/>
+     <h1 style="color:red">${dep}</h1>
+     <p style="color:#ff0033">department manager</p>
+     <py:for each="ma in mana">
+     <input type="hidden" name="depUsers" value="${mana}"/>
+     ${dictUZ[ma]}<br/>
+     </py:for>
+     <input type="submit" name="submit" value="deleteManager"/>
+     </form>
+     <form action="${pm_href}/hours/delDepViceMana" method="post">
+     <input type="hidden" name="dep" value="${depId}"/>
+     <p style="color:#ff0033">department vice manager</p>
+     <py:for each="vm in viceMana">
+     <input type="hidden" name="depUsers" value="${viceMana}"/>
+     ${dictUZ[vm]}<br/>
+     </py:for>
+     <input type="submit" name="submit" value="deleteViceManager"/>
+     </form>
+     <form id="form1" action="${pm_href}/hours/doDelDep" method="post">
+     <input type="hidden" name="dep" value="${depId}"/>
+
+     <p style="color:#ff9999">department users</p>
+     <py:for each="u in users">
+      <py:for each="un in u">
+     <input type="checkbox" name="depUsers" value ="${u}"/>
+        ${dictUZ[un]}
+     </py:for></py:for><br/>
+     <input type="button" name="button3" id="button3" value="deleteUsers"/>
+     <input type="button" name="button1" id="button1" value="addDepManager"/>
+     <input type="button" name="button2" id="button2" value="addDepViceManager"/>
+     </form>
+     <form action="${pm_href}/hours/doAddDep" method="POST">
+     <p style="color:#ff9999">other users</p>
+     <input type="hidden" name="dep" value="${depId}"/>
+     <py:for each="u in otherUsers">
+     <py:for each="ua in u">
+     <input type="checkbox" name="users" value ="${u}"/>
+        ${dictUZ[ua]}
+     </py:for></py:for><br/>
+      <input type="submit" name="submit" value="addUsers"/>
+     </form>
+     </fieldset>
+  </div>
+
+</body>
+
+</html>

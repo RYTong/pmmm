@@ -1,0 +1,59 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+  <title>user list</title>
+  <script type="text/javascript">
+    $(function(){
+        $("tbody tr").each(function(i){
+          var username = $("tbody tr").eq(i).find("td").eq(0).text();
+          if(username==""){
+              var eNname = $("tbody tr").eq(i).find("td").eq(0).children("input[name='user']").val();
+              $("tbody tr").eq(i).find("td").eq(0).text(eNname)
+              $("tbody tr").eq(i).find("td").eq(0).css("color","blue");
+          }
+      })
+    })
+</script>
+</head>
+<body>
+<div id="content">
+<xi:include href="pm_head.html"/>
+<fieldset>
+<legend>员工工时填写统计名单</legend>
+<table class="listing" id="exportExcel" style="width:400px">
+      <tr>
+          <td style="width:100px">部门</td>
+          <td style="width:100px">人员名单</td>
+          <td>不合格记录条数</td>
+          <td>缺少工时记录天数</td>
+      </tr>
+      <tbody>
+       <py:for each="u in users_info">
+      <tr>
+          <td style="width:100px">${dictD[u[0]]}</td>
+          <td style="width:100px">${dictU[u[0]]}</td>
+          <td>${dict1[u[0]]}</td>
+          <td>${dict3[u[0]]}</td>
+      </tr>
+       </py:for>
+      </tbody>
+</table>
+  <input type="button" onclick="exportTableToExcel('exportExcel')" value="exportExcel"/>
+ </fieldset>
+ <fieldset>
+      <legend>未填写工时人员列表</legend>
+   <ul>
+   <py:for each="user in lostDay">
+     <li type="square" style="color:blue;float:left;margin-right:20px;">${user}</li>
+   </py:for>
+   </ul>
+   </fieldset>
+</div>
+</body>
+</html>

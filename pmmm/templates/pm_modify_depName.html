@@ -1,0 +1,45 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>modify department name</title>
+</head>
+
+<body>
+  <xi:include href="pm_head.html"/>
+  <div id="content">
+    <fieldset>
+       <legend>修改部门名</legend>
+       <tr>
+	<td>
+       原部门编号：<span style="color:red">${depId}</span>
+       原上属部门编号：<span style="color:red">${leaderdepId}</span>
+       原部门名称：<span style="color:red">${depName}</span>
+       原部门Email：<span style="color:red">${depemail}</span>
+	</td>
+       </tr>
+       
+       <form method="post" action="${pm_href}/hours/modifyDep">
+	<tr>
+	<td>
+        部门新名称：<input type="text" name="depName"/>
+	新上属部门编号：<input type="text" name="leaderdepId"/>
+	部门新Email：<input type="text" name="depemail"/>
+        <input type="hidden" value="${depId}" name="depId"/><br/>
+	<input type="submit" value="提交"/>
+	</td>
+       </tr>
+        
+       </form>
+    </fieldset>
+  </div>
+</body>
+
+</html>

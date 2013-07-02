@@ -1,0 +1,181 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+
+<head>
+  <title>Query List</title>
+<script type="text/javascript">
+//<![CDATA[
+    $(function(){
+        if($("input[name='checkType']:first").is(":checked")){
+            $("fieldset.fieldset1").css("display","block");
+            $("fieldset.fieldset2").css("display","none");
+            var lastIndex = $("#queryForm").attr("action").lastIndexOf("/")
+            var uri = $("#queryForm").attr("action").substring(0,lastIndex+1)
+            var url = $("#queryForm").attr("action").substring(0,lastIndex+1)+"queryHourX"
+            $("#queryForm").attr("action",url)
+        }
+        if($("input[name='checkType']").eq(1).is(":checked")){
+            $("fieldset.fieldset1").css("display","none");
+            $("fieldset.fieldset2").css("display","block");
+            var lastIndex = $("#queryForm").attr("action").lastIndexOf("/")
+            var uri = $("#queryForm").attr("action").substring(0,lastIndex+1)
+            var url = $("#queryForm").attr("action").substring(0,lastIndex+1)+"queryHour"
+            $("#queryForm").attr("action",url)
+        }
+    $("input[name='checkType']:first").click(function(){
+       $("fieldset.fieldset1").css("display","block");
+       $("fieldset.fieldset2").css("display","none");
+        var lastIndex = $("#queryForm").attr("action").lastIndexOf("/")
+        var uri = $("#queryForm").attr("action").substring(0,lastIndex+1)
+        var url = $("#queryForm").attr("action").substring(0,lastIndex+1)+"queryHourX"
+        $("#queryForm").attr("action",url)
+    });
+    $("input[name='checkType']").eq(1).click(function(){
+        $("fieldset.fieldset1").css("display","none");
+        $("fieldset.fieldset2").css("display","block");
+        var lastIndex = $("#queryForm").attr("action").lastIndexOf("/")
+        var uri = $("#queryForm").attr("action").substring(0,lastIndex+1)
+        var url = $("#queryForm").attr("action").substring(0,lastIndex+1)+"queryHour"
+        $("#queryForm").attr("action",url)
+
+    });
+    $("#queryButton").click(function(){
+        if($("input[name='checkType']").eq(1).is(':checked')){
+           var len1 = $("input[name='employees']").length
+           var len=$("input[name='employees']:checked").length;
+		   var startDate = $("input[name='startTime']").val();
+		   var endDate = $("input[name='endTime']").val();
+		   var startTime = new Date(Date.parse(startDate.replace(/-/g, "/")));
+		   var endTime = new Date(Date.parse(endDate.replace(/-/g, "/")));
+		   if(startTime>endTime){
+		       alert("起始时间不能大于终止时间！");
+			   return false;
+           }else{
+		    if(len1==0){
+                $("#queryForm").submit()
+            }else if(len==0){
+                alert("至少选择一个查询人员")
+            }else{
+                $("#queryForm").submit()
+            }
+		   }
+        }else{
+            $("#queryForm").submit()
+        }
+        })
+
+    $("input#checkAll").click(function(){
+        $("div.showUsers input[type=checkbox]").each(function(i){
+            $("div.showUsers input[type=checkbox]").eq(i).attr("checked","checked")
+        })
+    })
+    $("input#checkReturn").click(function(){
+         $("div.showUsers input[type=checkbox]").each(function(i){
+            if($("div.showUsers input[type=checkbox]").eq(i).is(':checked')){
+               $("div.showUsers input[type=checkbox]").eq(i).attr("checked","")
+            }else{
+                $("div.showUsers input[type=checkbox]").eq(i).attr("checked","checked")
+            }
+        })
+    })
+    var date=new Date();
+    var year =date.getFullYear()
+    var month=date.getMonth()+1
+    var day=date.getDate()
+    if(day.toString().length==1){
+        day= "0"+day
+    }
+    if(month.toString().length==1){
+        month= "0"+month
+    }
+    var str=year+"-"+month+"-"+day
+    var str1=year+"-"+month+"-"+"01"
+    $("#inputDate").val(str1);
+    $("#inputDate1").val(str);
+    $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+    });
+   $('#inputDate1').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate1').val(),
+	current: $('#inputDate1').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate1').DatePickerSetDate($('#inputDate1').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate1').val(formated);
+
+			$('#inputDate1').DatePickerHide();
+
+	}
+  });
+})
+//]]>
+</script>
+</head>
+<body>
+  <xi:include href="pm_head.html" />
+  <div id="content">
+  <fieldset>
+      <legend>查询工时记录</legend>
+  <form id="queryForm" action="${pm_href}/hours/queryHour" method="post">
+    请选择要查询的时间段：从:<input style="width:80px" readonly="readonly" name="startTime" type="text" id="inputDate" value=""/> 到:<input style="width:80px" name="endTime" readonly="readonly" type="text" id="inputDate1" value=""/><br/>
+     <input type="hidden" value="${auth}" name="employee"/><br/>
+    <div class="projAdmin" py:if="pm_is_project_admin">
+    请选择查询条件：<input type="radio" name="checkType" value="1"/>按项目查询 <input type="radio" name="checkType" value="2" checked="checked"/>按员工查询
+    <fieldset class="fieldset1"  style="display:none">
+    <legend style="font-size:14px">按项目查询</legend>
+    <div class="showProjs">
+    请选择要查询的项目：<select name="proj">
+     <py:if test="type(projs) is list">
+           <py:for each="u in projs">
+               <option value="${u}">${dictPZh[u]}</option>
+           </py:for>
+     </py:if>
+     <py:if test="type(projs) is not list">
+         <option value="${projs}">${dictPZh[projs]}</option>
+     </py:if>
+    </select>
+    </div>
+    </fieldset>
+    <fieldset class="fieldset2">
+    <legend style="font-size:14px">按人员查询</legend>
+    <div class="showUsers">
+    请选择要查询的员工名：<br/>
+    <py:for each="u in employees">
+      <py:for each="us in u">
+      <input type="checkbox" name="employees" value="${us}"/><span style="color:blue">${dict1[us]}</span>
+      </py:for>
+    </py:for><br/>
+     <input type="button" id="checkAll" value="全选"/><input type="button" id="checkReturn" value="反选"/><br/>
+     </div>
+     </fieldset>
+     </div>
+    <input type="submit" id="queryButton" value="提交"/>
+  </form>
+  </fieldset>
+  </div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE 
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+	xmlns:xi="http://www.w3.org/2001/XInclude" 
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>module Information</title>
+  </head>
+    
+  <body>
+    <xi:include href="pm_head.html"/>
+    <div id="content">
+      <h2>Summary</h2>
+      <div>
+      	${pm_proj}:${pm_module}<br/>
+        Access URL root: ${pm_modurl}
+      </div>
+
+      <div py:if="pm_is_project_admin">
+        <h2>Actions</h2>
+         <!-- End of Admin Section -->
+     </div>
+
+      <div py:if="pm_is_project_admin">     
+      <h2>Manage Users</h2>      
+      <table class="listing pmmm-action">
+        <thead>
+        <tr><th align='left'>Project Module Users</th></tr>
+        </thead>
+        <tbody>
+          <form method="post" action="${pm_href}/project/da" accept-charset="utf-8">
+            <input type="hidden" name="project" value="${pm_proj}"/>
+            <input type="hidden" name="module" value ="${pm_module}"/>
+            <tr><td>
+              <span py:for="u in pm_users">
+                <input type="checkbox" name="user" value ="${u}"/>
+                <a href="${pm_href}/user/info/${u}">${u}</a>
+              </span>
+            </td></tr>
+            <tr><td>
+              <input type="submit" name="submit" value="Remove"/>
+            </td></tr>
+          </form>
+        </tbody>
+      </table>
+      <table class="listing pmmm-action">
+        <thead>
+          <tr><th align='left'>Other Users</th></tr>
+        </thead>
+        <tbody>
+          <form method="post" action="${pm_href}/project/aa" accept-charset="utf-8">
+            <input type="hidden" name="project" value="${pm_proj}"/>
+            <input type="hidden" name="module" value ="${pm_module}"/>
+            <tr><td>
+              <span py:for="u in pm_not_users">
+                <input type="checkbox" name="user" value ="${u}"/>
+                <a href="${pm_href}/user/info/${u}">${u}</a>
+              </span>
+            </td></tr>
+            <tr><td>
+              <input type="submit" name="submit" value="Add"/>
+            </td></tr>
+          </form>
+        </tbody>
+      </table>
+      </div>
+
+      <hr/>
+
+    </div>
+  </body>
+</html>

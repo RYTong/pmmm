@@ -1,0 +1,216 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+function doCookie(){
+      var proj_name = $("#proj option:selected").val();
+      var mile = $("select[name='milestone'].mile option:selected").val();
+      var work_type = $("#proj_type option:selected").val();
+      var work_date = $("#inputDate").val();
+      var options = {};
+      options.expires = 30;
+      $.cookie('proj_name',proj_name,options);
+      $.cookie('mile',mile,options);
+      $.cookie('work_type',work_type,options);
+ }
+ function test()
+{
+  if(!confirm('确认删除吗？')) return false;
+}
+function hideNoRe_info(){
+ $("#noRe_info").css("display","none");   
+
+}
+$(function(){  
+    setTimeout('hideNoRe_info()',5000);
+    $("#toggleButton").click(function(){
+       $("div.re_report").toggle("slow");
+    })
+    var date=new Date();
+    var year =date.getFullYear()
+    var month=date.getMonth()+1
+    var day=date.getDate()
+    if(day.toString().length==1){
+        day= "0"+day
+    }
+    if(month.toString().length==1){
+        month= "0"+month
+    }
+    var str=year+"-"+month+"-"+day
+    $("#inputDate").val(str);
+    $(".milestone").eq(0).css("display","inline");
+    $(".milestone").eq(0).find("select").attr("name","milestone");
+    $("input#button").click(function(){
+        var hour=$("#proj_hour").val()
+        var reg= new RegExp("^(([0-9]+\\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\\.[0-9]+)|([0-9]*[1-9][0-9]*))$");
+        var h = hour.split(".")[1]
+        if(reg.test(hour)){
+            if(typeof(h)=='undefined'){
+                var _inputDate = $("#inputDate").val();
+                if(_inputDate.indexOf("-")==-1){
+                    alert("请选择正确的日期");
+                    return false;
+                }
+                doCookie();
+                $('input#button').attr("disabled","disabled");
+                $("#reportForm").submit()
+            }else if(h=="5"){
+                var _inputDate = $("#inputDate").val();
+                if(_inputDate.indexOf("-")==-1){
+                    alert("请选择正确的日期");
+                    return false;
+                }
+                doCookie();
+                $('input#button').attr("disabled","disabled");
+                $("#reportForm").submit()
+            }else{
+              alert("请正确填写工作时间")
+            }
+        }else{
+            alert("请正确填写工作时间")
+        }
+    });
+   $("#proj").change(function(){
+      var i=$("#proj :selected").index()
+      $(".milestone").each(function(){
+          $(this).css("display","none");
+          $(this).find("select").removeAttr("name");
+      })
+      $(".milestone").eq(i).css("display","inline");
+      $(".milestone").eq(i).find("select").attr("name","milestone");
+
+   })
+
+   $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+  });
+  var _proj_name = $.cookie('proj_name');
+  var _mile = $.cookie('mile');
+  var _work_type = $.cookie('work_type');
+  $("#proj option[value='"+_proj_name+"']").attr("selected","selected");
+  var projIndex=$("#proj :selected").index();
+  $(".milestone").each(function(){
+     $(this).css("display","none");
+     $(this).find("select").removeAttr("name");
+  })
+  $(".milestone").eq(projIndex).css("display","inline");
+  $(".milestone").eq(projIndex).find("select").attr("name","milestone");
+  $("select.mile option[value='"+_mile+"']").attr("selected","selected");
+  $("#proj_type option[value='"+_work_type+"']").attr("selected","selected");
+  if($.cookie('work_date')!=null){
+      $("#inputDate").val($.cookie('work_date'));
+  }
+})
+</script>
+   <title>report</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+  <py:if test="len(check_list)>0">
+      <span style="color:red">*您有${len(check_list)}条没有通过的审核</span><input type="button" id="toggleButton" value="点击查看"/>
+  </py:if><br/>
+  <div class="re_report" style="display:none">
+             <table  class="listing">
+           <thead align="center">
+            <tr>
+            <td>项目</td>
+            <td>姓名</td>
+            <td>工作类型</td>
+            <td>工作日期</td>
+            <td>工作时间</td>
+            <td>里程碑</td>
+            <td>审核状态</td>
+            <td>反馈信息</td>
+            <td>审核人</td>
+            <td>操作</td>
+            </tr>
+           </thead>
+           <tbody align="center">
+           <py:for each="rs in check_list">
+           <form action="${pm_href}/hours/er" method="post">
+              <tr>
+                  <td>${dictP[rs['pn']]}<input name="proj" type="hidden" value="${rs.pn}"/></td>
+                  <td>${authZh}<input name="user" type="hidden" value="${rs.un}"/></td>
+                  <td>${rs.wt}<input name="work_type" type="hidden" value="${rs.wt}"/></td>
+                  <td>${rs.wd}<input name="work_date" type="hidden" value="${rs.wd}"/></td>
+                  <td>${rs.wtl}小时<input name="work_time" type="hidden" value="${rs.wtl}"/></td>
+                  <td>${rs.mt}<input name="milestone" type="hidden" value="${rs.mt}"/></td><td><input type="hidden" name="rowid" value="${rs.rw}"/><py:if test="rs.cs=='2'"><span style="color:#660033">内容不符</span></py:if><py:if test="rs.cs=='3'"><span style="color:#ff6666">时间不符</span></py:if></td>
+                  <input name="userInfo" type="hidden" value="${rs.uf}"/>
+                  <td>${rs.mf}<input name="managerInfo" type="hidden" value="${rs.mf}"/></td>
+                  <td>${dictU[rs['cu']]}</td>
+                  <td><input type="submit" value="编辑" name="submit"/><a onclick="return test()" href="${pm_href}/hours/dere/${rs.rw}">删除</a></td>
+              </tr>
+           </form>
+          </py:for>
+         </tbody>
+       </table><br/>
+  </div>
+  <form id="reportForm" action="${pm_href}/hours/prs" method="post">
+  <div class="main_report" style="margin:0 auto">
+	    <span style="color:red">
+		  *工时填写注意事项：<br/></span>
+	    <span >
+            1、超过5天补录、未填的工时均扣15元/天，也就是说周一的工时最迟必须在周日填好，到下周一填的话就算不合格；<br/>
+            2、休假需填写工时，调休假，请选择对应的加班调休项目，别的请假类型一律放rytong项目，工作类型选择对应的请假类型，时间填写8小时；<br/>
+            3、填错工时被拒审核，请不要删除，重新编辑即可；<br/>
+            4、工作量能选项目的请尽量选择对应项目，不能都放到rytong，QA等管理类项目。如果没权限，请及时联系项目经理开通；<br/>
+            5、法定节假日除非加班，否则不用填写工时；<br/>
+	    </span>
+   <fieldset>
+   <legend>填报工时</legend>
+   项目选择：<select name="proj" id="proj">
+               <py:for each="pn in proj_names">
+		  <py:for each="p in pn">
+               <option value="${p}">${dictP[p]}</option>
+	          </py:for>
+               </py:for>
+            </select>
+
+   <py:for each="mss in milestones">
+      <div style="display:none" class="milestone">
+   里程碑：<select class="mile">
+              <py:for each="ms in mss">
+               <py:for each="m in ms">
+                 <option value="${m}">${m}</option>
+               </py:for>
+              </py:for>
+          </select><br/>
+      </div>
+   </py:for>
+   选择工作类型：<select name="proj_type" id="proj_type">
+                    <py:for each="pt in proj_types">
+                      <option value="${pt}">${pt}</option>
+                    </py:for>
+                 </select><br/>
+   填写工作时间：日期：<input type="text" style="width:85px" name="proj_date" readonly="readonly" id="inputDate" class="inputDate" value=""/> 时间：<input style="width:50px;" type="text" id="proj_hour" name="proj_hour" value=""/>小时<span style="color:#ff0000">*时间精确到0.5小时*</span> <br/>
+   工作内容：<textarea cols="40" rows="5" name="userRemarks"></textarea><br/>
+  <p id="noRe_info" style="color:red;font-weight:blod;font-family:'微软雅黑';font-size:15px;">${errorinfo}</p>
+  <p id="noRe_info1" style="color:red;font-weight:blod;font-family:'微软雅黑';font-size:15px;">${errorinfo1}</p>
+  <p id="noRe_info2" style="color:red;font-weight:blod;font-family:'微软雅黑';font-size:15px;">${errorinfo2}</p>
+  <input type="button" id="button" value="提交"/>
+  </fieldset>
+  </div>
+   </form>
+</body>
+</html>
+

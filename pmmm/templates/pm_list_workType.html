@@ -1,0 +1,43 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>List WorkTypes</title>
+<script type="text/javascript">
+    $(function(){
+
+        $("#deleButton").click(function(){
+            var len=$("input[name='workType']:checked").length;
+             if(len==0){
+                alert("至少选择一个工作类型")
+            }else{
+                $("#deleForm").submit()
+            }
+        })
+
+
+    })
+</script>
+</head>
+
+<body>
+<xi:include href="pm_head.html"/>
+  <div id="content">
+ <form id="deleForm" action="${pm_href}/hours/deleWt" method="post">
+<py:for each="u in workTypes">
+    <input type="hidden" name="rowid" value="${u.ri}"/>
+  <input type="checkbox" name="workType" value="${u.ri}"/>${u.ptn}
+</py:for><br/>
+     <input type="button" id="deleButton" value="提交"/>
+</form>
+  </div>
+</body>
+
+</html>

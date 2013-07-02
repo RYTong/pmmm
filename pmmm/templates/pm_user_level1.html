@@ -1,0 +1,39 @@
+<!DOCTYPE
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+<head>
+    <title>Configuration</title>
+</head>
+<body>
+<div id="content">
+<xi:include href="pm_head.html"/>
+<fieldset>
+ <legend style="color:blue">用户级别维护</legend>
+ <form action="${pm_href}/hours/addUserLevel" method="post">
+ 初级级别:<br/>
+ <py:for each="u in pm_cjusers1">
+   <input type="checkbox" name="rid" value="${u[1]}"/><span class="username" style="color:blue">${u[0]}</span>
+   </py:for><br/>
+ 中级级别:<br/>
+ <py:for each="u in pm_zjusers1">
+   <input type="checkbox" name="rid" value="${u[1]}"/><span class="username" style="color:blue">${u[0]}</span>
+   </py:for><br/>
+ 高级级别:<br/>
+ <py:for each="u in pm_gjusers1">
+   <input type="checkbox" name="rid" value="${u[1]}"/><span class="username" style="color:blue">${u[0]}</span>
+   </py:for><br/>
+ 专家级别:<br/>
+ <py:for each="u in pm_zajusers1">
+   <input type="checkbox" name="rid" value="${u[1]}"/><span class="username" style="color:blue">${u[0]}</span>
+   </py:for><br/>
+<input type="submit" name="level" value="设为初级级别"/><input type="submit" name="level" value="设为中级级别"/> <input type="submit" name="level" value="设为高级级别"/> <input type="submit" name="level" value="设为专家级别"/>
+ </form>
+</fieldset>
+</div>
+</body>
+</html>

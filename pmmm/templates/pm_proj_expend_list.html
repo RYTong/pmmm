@@ -1,0 +1,76 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>query hour result</title>
+<script type="text/javascript">
+ $(function(){
+         $("tbody tr").each(function(i){
+          var tdate= $("tbody tr").eq(i).find("td").eq(3).text();
+          var weekDay =new Date(Date.parse(tdate.replace(/-/g,   "/")))  //在firefox，chrome，opera中直接在new Date()中带参数即可，在ie和safari中采用改方法解决结果为NaN的问题
+          weekDay=weekDay.getDay()
+          var weekDay1 = {"0":"日","1":"一","2":"二","3":"三","4":"四","5":"五","6":"六"}[weekDay]
+          var newDate = tdate+"["+weekDay1+"]"
+          $("tbody tr").eq(i).find("td").eq(3).text(newDate)
+      })
+      $("tbody tr").each(function(i){
+          var username = $("tbody tr").eq(i).find("td").eq(1).text();
+          if(username==""){
+              var eNname = $("tbody tr").eq(i).find("td").eq(1).children("input[name='user']").val()+"[离职]";
+              $("tbody tr").eq(i).find("td").eq(1).text(eNname)
+              $("tbody tr").eq(i).find("td").eq(1).css("color","blue");
+          }
+      })
+     $("tbody tr:even").css("background-color","#f1f1f1");
+ });
+
+  function test()
+{
+  if(!confirm('确认删除吗？')) return false;
+}
+
+</script>
+</head>
+<body>
+  <div id="content">
+    <xi:include href="pm_head.html"/>
+    <fieldset>
+       <legend>项目财务列表<a href="${pm_href}/hours/expend">(继续录入项目财务)</a></legend>
+       <table  class="listing">
+           <thead align="center">
+            <tr>
+            <td style="width:150px">项目</td>
+            <td style="width:180px">财务类型</td>
+            <td style="width:150px">金额</td>
+            <td style="width:180px">时间</td>
+	    <td>备注</td>     
+            <td style="width:160px">操作</td>
+            </tr>
+           </thead>
+           <tbody align="center">
+          <py:for each="rs in queryList">
+          <form action="${pm_href}/hours/expender" method="post">
+              <tr>
+                  <td>${dictP[rs.pn]}<input name="proj" type="hidden" value="${rs.pn}"/></td>
+                  <td>${rs.et}<input name="expend_type" type="hidden" value="${rs.et}"/></td>
+                  <td>${rs.ex}</td><input name="expend" type="hidden" value="${rs.ex}"/>
+		  <td>${rs.ti}</td><input name="time" type="hidden" value="${rs.ti}"/>
+		  <td>${rs.rm}</td><input name="Remarks" type="hidden" value="${rs.rm}"/>
+		  <input type="hidden" name="rowid" value="${rs.rd}"/>
+		  <td><input type="submit" value="编辑" name="submit"/><a href="${pm_href}/hours/derexpend/${rs.rd}" onclick="return test()">删除</a></td>
+              </tr>
+          </form>
+          </py:for>
+         </tbody>
+       </table><br/>
+      </fieldset>
+    </div>
+</body>
+</html>

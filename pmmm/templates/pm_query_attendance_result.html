@@ -1,0 +1,56 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>query attendance result</title>
+</head>
+<body>
+  <div id="content">
+    <fieldset> 
+      <li py:if="is_trac_amdin" style="color:red;float:right;"><a  href="${pm_href}/hours/pglist">系统配置</a></li>
+      <li py:if="pm_is_project_admin" style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/palist">统计分析</a></li>
+      <li py:if="pm_is_project_admin" style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/pclist">工时审核</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a href="${pm_href}/hours/pwlist">发送周报</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/prlist">填报工时</a></li>
+      <li style="color:red;float:right;margin-right:20px;"><a  href="${pm_href}/hours/pqlist">工时记录查询</a></li>	      
+    </fieldset>
+    <fieldset>
+       <table  class="listing">
+           <thead align="center">
+            <tr>
+            <td style="width:100px">用户考勤编号</td>
+            <td style="width:100px">姓名</td>
+            <td style="width:100px">日期</td>
+            <td style="width:100px">时间一</td>
+            <td style="width:100px">时间二</td>
+	    <td style="width:100px">时间三</td>
+            <td style="width:100px">时间四</td>
+            <td style="width:100px">时间五</td>
+            </tr>
+           </thead>
+           <tbody align="center">
+          <py:for each="rs in queryList">
+              <tr>
+                  <td>${rs.un}</td>
+                  <td>${rs.ue}</td>
+                  <td>${rs.dt}</td>
+		  <td>${rs.ti1}</td>
+                  <td>${rs.ti2}</td>
+                  <td>${rs.ti3}</td>
+		  <td>${rs.ti4}</td>
+                  <td>${rs.ti5}</td>
+              </tr>
+          </py:for>
+         </tbody>
+       </table><br/>
+      </fieldset>
+    </div>
+</body>
+</html>

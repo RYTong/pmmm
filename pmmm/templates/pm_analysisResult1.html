@@ -1,0 +1,74 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+<script type="text/javascript">
+  $(function(){
+   $("tbody tr").each(function(i){
+          var username = $("tbody tr").eq(i).find("td").eq(0).text();
+          if(username==""){
+              var eNname = $("tbody tr").eq(i).find("td").eq(0).children("input[name='user']").val();
+              $("tbody tr").eq(i).find("td").eq(0).text(eNname)
+          }
+   })
+        var anaVal=$("#anaWay").val();
+        if(anaVal==1){
+          $("#table2").css("display","none")
+        }else if(anaVal==2){
+            $("#table1").css("display","none")
+        }
+
+
+    })
+
+ function exportWhichTable(){
+var t1=$("#table1").css("display");
+var t2=$("#table2").css("display");
+     if(t1!="none"){
+         exportTableToExcel('table1');
+     }else if(t2!=="none"){
+         exportTableToExcel('table2');
+     }
+ }
+</script>
+    <title>view report form1</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+<div><span style="color:red;font-size:16px;">项目名称：${dictP[projName]}</span><br/>  <span>从：${startTime}</span><span>到：${endTime}</span></div>
+<input type="hidden" value="${anaWay}" id="anaWay"/>
+<table id="table1" class="listing" style="width:360px">
+    <tr><td style="width:60px">员工名</td><td style="width:100px">员工级别</td><td style="width:100px">工作时间(天)</td><td style="width:100px">成本</td></tr>
+   <py:for each="u in employees">
+    <py:for each="un in u">
+    <tr>
+         <td style="width:50px">${dictU[un]}<input type="hidden" name="user" value="${u}"/></td>
+          <td style="width:100px">${level[str(u)]}</td>
+         <td class="view" style="width:70px">${hourLength[str(u)]}</td>
+         <td class="view" style="width:100px">${cost[str(u)]}</td>
+     </tr>
+    </py:for></py:for>
+    <tr><td style="width:50px">合计</td>
+      <td></td>
+      <td style="width:70px">${sum1}</td>
+      <td style="width:100px">${sum}</td>
+    </tr>
+</table>
+<table id="table2" class="listing">
+    <tr><td>投入</td><td>工作时间（小时）</td></tr>
+   <py:for each="u in work_types">
+    <tr>
+         <td>${u}</td>
+         <td class="view">${hourLength2[u]}</td>
+     </tr>
+    </py:for>
+  </table>
+<input type="button" onclick="exportWhichTable()" value="exportExcel"/><a href="${pm_href}/hours/palist">返回继续统计</a>
+</body>
+</html>

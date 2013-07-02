@@ -1,0 +1,67 @@
+<!DOCTYPE
+    html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+<head>
+    <title>Configuration</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+<div id="content">
+<fieldset>
+ <legend style="color:red">添加用户中文名</legend>
+ <form action="${pm_href}/hours/addUserZh" method="post">
+ 用户:<br/>
+ <py:for each="u in pm_users">
+   ${u[0]}<input type="hidden" value="${u[1]}" name="rid"/><input style="width:60px" type="text" name="zh" value=""/>
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+ <legend style="color:red">添加离职用户</legend>
+ <form action="${pm_href}/hours/addleaofUserZh" method="post">
+ 用户:<br/>
+ <py:for each="u in listu">
+   ${u}<input type="hidden" value="${u}" name="user"/><input style="width:60px" type="text" name="user_zh" value=""/>
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+ <legend style="color:red">删除用户中文名</legend>
+ <form action="${pm_href}/hours/delUserZh" method="post">
+ 用户:<br/>
+ <py:for each="u in pm_users_zh">
+     <input type="checkbox" name="users" value="${u[1]}"/>${u[0]}
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+<legend style="color:red">添加项目中文名</legend>
+ <form action="${pm_href}/hours/addProjZh" method="post">
+  项目:<br/>
+  <py:for each="u in pm_projects">
+     <a>${u[0]}</a><input type="hidden" value="${u[1]}" name="rid"/><input style="width:80px" type="text" name="zh" value=""/>
+  </py:for><br/>
+  <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+<fieldset>
+ <legend style="color:red">删除项目中文名</legend>
+ <form action="${pm_href}/hours/delProjZh" method="post">
+ 项目:<br/>
+ <py:for each="u in pm_en_projs">
+     <input type="checkbox" name="projs" value="${u[1]}"/>${dictP[u[0]]}(${u[0]})
+ </py:for><br/>
+ <input type="submit" name="submit" value="提交"/>
+ </form>
+</fieldset>
+</div>
+</body>
+</html>

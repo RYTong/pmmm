@@ -1,0 +1,177 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+<script type="text/javascript">
+$(function(){
+    $("input#checkAll").click(function(){
+        $("div.showUsers input[type=checkbox]").each(function(i){
+            $("div.showUsers input[type=checkbox]").eq(i).attr("checked","checked")
+        })
+    })
+    $("input#checkReturn").click(function(){
+         $("div.showUsers input[type=checkbox]").each(function(i){
+            if($("div.showUsers input[type=checkbox]").eq(i).is(':checked')){
+               $("div.showUsers input[type=checkbox]").eq(i).attr("checked","")
+            }else{
+                $("div.showUsers input[type=checkbox]").eq(i).attr("checked","checked")
+            }
+        })
+    })
+     $("input#checkButton").click(function(){
+         if($(".checkMe").is(':checked')){
+             $("#checkUserForm").submit()
+         }else{
+             alert("请选择用户")
+         }
+     })
+    $("input#showDiv").click(function(){
+        $("div.showUsers").toggle("slow")
+    })
+    var date=new Date();
+    var year =date.getFullYear()
+    var month=date.getMonth()+1
+    var day=date.getDate()
+    if(day.toString().length==1){
+        day= "0"+day
+    }
+    if(month.toString().length==1){
+        month= "0"+month
+    }
+    var strT = year+"-"+month
+    $("#inputD1").val(strT)
+    $("#inputD2").val(strT)
+    var str=year+"-"+month+"-"+day;
+    var strStart = $.cookie("dateStart");
+    var strEnd = $.cookie("dateEnd");
+    $("#inputDate").val(strStart?strStart:str);
+    $("#inputDate1").val(strEnd?strEnd:str);
+    $("input#button").click(function(){
+        var dateStart=$("#inputDate").val();
+        var dateEnd=$("#inputDate1").val();
+        var options = {};
+        options.expires = 30;
+        $.cookie('dateStart',dateStart,options);
+        $.cookie('dateEnd',dateEnd,options);
+        $("#proj_ana_form").submit();
+    });
+
+   $('#inputDate').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate').val(),
+	current: $('#inputDate').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate').DatePickerSetDate($('#inputDate').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate').val(formated);
+
+			$('#inputDate').DatePickerHide();
+
+	}
+    });
+   $('#inputDate1').DatePicker({
+	format:'Y-m-d',
+	date: $('#inputDate1').val(),
+	current: $('#inputDate1').val(),
+	starts: 1,
+	onBeforeShow: function(){
+		$('#inputDate1').DatePickerSetDate($('#inputDate1').val(), true);
+	},
+	onChange: function(formated, dates){
+
+		$('#inputDate1').val(formated);
+
+			$('#inputDate1').DatePickerHide();
+
+	}
+});
+})
+</script>
+  <title>Analysis</title>
+</head>
+<body>
+<xi:include href="pm_head.html"/>
+  <h2 style="color:blue">请配置统计条件</h2>
+  <div id="content">
+  <fieldset>
+  <legend>按月统计员工工作量</legend>
+  <form method="post" action="${pm_href}/hours/viewReport2">
+   请选择月份：<input style="width:60px" id="inputD1" type="text" name="anaMonth" onclick="setmonth(this)" readonly="readonly"/>
+   <input type="submit" name="submit" value="显示当月员工工作量报表"/>
+
+  </form>
+  </fieldset>
+  <fieldset>
+      <legend>统计部分员工月工作量</legend>
+        <form method="post" id="checkUserForm" action="${pm_href}/hours/viewReport3">
+   请选择月份：<input id="inputD2" style="width:60px" type="text" name="anaMonth" onclick="setmonth(this)" readonly="readonly"/>
+
+   <input type="button" id="showDiv" value="显示/隐藏人员列表"/>
+   <div class="showUsers">
+    <py:for each="u in proj_uname">
+	<py:for each="us in u">
+     <input class="checkMe" type="checkbox" name="user" value="${us}"/>
+     <span style="color:blue">${dict1[us]}</span>
+        </py:for>
+    </py:for><br/>
+    <input type="button" id="checkAll" value="全选"/><input type="button" id="checkReturn" value="反选"/><br/>
+    <input type="button" id="checkButton" name="button" value="显示选中员工工作量报表"/>
+   </div>
+  </form>
+  </fieldset>
+  <fieldset>
+   <legend>项目工时统计报表</legend>
+  <form action="${pm_href}/hours/anaCount" id="proj_ana_form" method="post">
+      项目选择：<select name="proj" id="proj">
+               <py:for each="pn in proj_names">
+		<py:for each="p in pn">
+               <option value="${pn}">${dict2[p]}</option>
+               </py:for></py:for>
+               </select><br/>
+      选择时间跨度：从：<input type="text" style="width:80px" class="inputDate" readonly="readonly" id="inputDate" name="startTime" value=""/>到：<input style="width:80px" class="inputDate" id="inputDate1" readonly="readonly"  type="text" name="endTime" value=""/><br/>
+      选择统计方法：
+      <input type="radio" name="anaWay" checked="checked" value="1"/>按人员划分
+      <input id="radioS" type="radio"  name="anaWay" value="2"/>按投入划分
+      <input id="radioS" type="radio"  name="anaWay" value="3"/>按工作岗位<br/>
+      <input type="button" id="button"  value="提交"/>
+  </form>
+</fieldset>
+<div class="tracAdmin" py:if="is_trac_admin">
+<fieldset>
+   <legend>工时记录统计表</legend>
+  <form action="${pm_href}/hours/timeRecord" method="post">
+   请选择月份：<input id="inputD2" style="width:60px" type="text" name="anaMonth" onclick="setmonth(this)" readonly="readonly"/> 请填写标准工时：<input  style="width:25px" type="text" name="days"/> (天)   
+      <input type="submit" name="submit" value="显示工时记录统计表"/>
+  </form>
+</fieldset>
+<fieldset>
+   <legend>工作量统计汇总表</legend>
+  <form action="${pm_href}/hours/workCount" method="post">
+     请填写统计年份:<input type="text" name="year"/>
+     <input type="radio" name="anaWay" checked="checked" value="1"/>包括加班时间
+      <input id="radioS" type="radio"  name="anaWay" value="2"/>不包括加班时间
+      <input type="submit" name="import" value="export excel"/>
+  </form>
+</fieldset>
+<fieldset>
+   <legend>财务汇总表</legend>
+  <form action="${pm_href}/hours/expendcount" method="post">
+     请填写统计年份:<input type="text" name="year"/>
+      <input type="submit" name="import" value="export excel"/>
+  </form>
+</fieldset>
+</div>
+  </div>
+</body>
+
+</html>

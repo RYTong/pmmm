@@ -1,0 +1,40 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>List Projects</title>
+  <script type="text/javascript">
+   function test()
+{
+  var str = "确定要删除选定项目吗?(具体删除内容为：proj_info、proj_user以及project表中关于选中项目的信息相关信息,未删除项目相关文件夹信息)"
+  if(!confirm(str)) return false;
+}
+  </script>
+</head>
+
+<body>
+<xi:include href="pm_head.html"/>
+  <div id="content">
+ <fieldset>
+   <form action="${pm_href}/hours/delproject" method="post">
+     <legend>项目列表</legend>
+ <py:for each="u in result">
+   <py:for each="us in u">
+ <input type="checkbox" name="proj_name" value ="${us}"/>[<a href="plpl/${us}">${dict1[us]}</a>]
+   </py:for>
+ </py:for>
+ <br/>
+ <input type="submit" value="删除项目" onclick="return test()"/>
+ </form>
+ </fieldset>
+  </div>
+</body>
+
+</html>

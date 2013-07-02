@@ -1,0 +1,88 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+	  
+<head>
+  <title>query hour result</title>
+<script type="text/javascript">
+ $(function(){
+         $("tbody tr").each(function(i){
+          var tdate= $("tbody tr").eq(i).find("td").eq(3).text();
+          var weekDay =new Date(Date.parse(tdate.replace(/-/g,   "/")))  //在firefox，chrome，opera中直接在new Date()中带参数即可，在ie和safari中采用改方法解决结果为NaN的问题
+          weekDay=weekDay.getDay()
+          var weekDay1 = {"0":"日","1":"一","2":"二","3":"三","4":"四","5":"五","6":"六"}[weekDay]
+          var newDate = tdate+"["+weekDay1+"]"
+          $("tbody tr").eq(i).find("td").eq(3).text(newDate)
+      })
+     $("tbody tr:even").css("background-color","#f1f1f1");
+ });
+
+  function test()
+{
+  if(!confirm('确认删除吗？')) return false;
+}
+
+</script>
+</head>
+<body>
+  <div id="content">
+    <xi:include href="pm_head.html"/>
+    <fieldset>
+       <table  class="listing">
+           <thead align="center">
+            <tr>
+            <td>项目</td>
+            <td style="width:60px">姓名</td>
+            <td style="width:80px">工作类型</td>
+            <td style="width:90px">工作日期</td>
+            <td style="width:70px">工作时间</td>
+	    <td>工时填写时间</td>
+            <td>里程碑</td>
+            <td style="width:80px">审核状态</td>
+	    <td>审核时间</td>
+            <td style="width:250px">工作内容</td>
+            <td style="width:100px">反馈信息</td>
+            <td style="width:60px">审核人</td>
+            <td>操作</td>
+            </tr>
+           </thead>
+           <tbody align="center">
+          <py:for each="rs in queryList">
+          <form action="${pm_href}/hours/er" method="post">
+              <tr>
+                  <td>${dictP[rs.pn]}<input name="proj" type="hidden" value="${rs.pn}"/></td>
+                  <td>${dictU[rs.un]}<input name="user" type="hidden" value="${rs.un}"/></td>
+                  <td>${rs.wt}<input name="work_type" type="hidden" value="${rs.wt}"/></td>
+                  <td>${rs.wd}</td><input name="work_date" type="hidden" value="${rs.wd}"/>
+                  <td>${rs.wtl}小时<input name="work_time" type="hidden" value="${rs.wtl}"/></td>
+		  <td>${rs.wti}<input name="write_time" type="hidden" value="${rs.wti}"/></td>
+                  <td>${rs.mt}<input name="milestone" type="hidden" value="${rs.mt}"/></td><td><input type="hidden" name="rowid" value="${rs.rw}"/><py:if test="rs.cs=='0'"><span>未审核</span></py:if><py:if test="rs.cs=='1'"><span>审核通过</span></py:if><py:if test="rs.cs=='2'"><span style="color:#660033">内容不符</span></py:if><py:if test="rs.cs=='3'"><span style="color:#ff6666">时间不符</span></py:if></td>
+                  <td>${rs.ct}<input name="checked_time" type="hidden" value="${rs.ct}"/></td>
+		  <td style="width:250px">${rs.uf}<input name="userInfo" type="hidden" value="${rs.uf}"/></td>
+                  <td style="width:100px">${rs.mf}<input name="managerInfo" type="hidden" value="${rs.mf}"/></td>
+                  <td>${dictC[rs.cu]}</td>
+                  <td style="width:80px"><py:if test="rs.cs=='0'"><input type="submit" value="编辑" name="submit"/></py:if><a href="${pm_href}/hours/dere/${rs.rw}" onclick="return test()">删除</a></td>
+              </tr>
+          </form>
+          </py:for>
+         </tbody>
+       </table><br/>
+      </fieldset>
+    <fieldset>
+      <legend>查询条件中未填写工时人员列表</legend>
+   <ul>
+   <py:for each="user in lostday">
+     <li type="square" style="color:blue;float:left;margin-right:20px;">${user}</li>
+
+   </py:for>
+   </ul>
+   </fieldset>
+    </div>
+</body>
+</html>

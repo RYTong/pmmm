@@ -1,0 +1,34 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="layout.html" />
+<xi:include href="macros.html" />
+<head>
+  <title>view report2</title>
+</head>
+<body>
+<div id="content">
+<p style="font-size:16px;color:red">统计月份： ${anaMonth}</p>
+<xi:include href="pm_head.html"/>
+<fieldset>
+<legend>按月统计员工工时报表</legend>
+<table class="listing" id="exportExcel">
+
+      <tr>
+          <td>员工名\项目名(单位:小时)</td>
+          <py:for each="p in projs"><td>${dictP[str(p)]}</td></py:for>
+          <td>员工个人合计</td>
+      </tr>
+      <py:for each="u in employees"><py:for each="un in u">
+          <tr><td>${dictU[un]}</td><py:for each="k in dict[str(u)]"><td>${k}</td></py:for><td>${dict1[str(u)]}</td></tr>
+      </py:for> </py:for>
+    <tr><td>项目合计</td><py:for each="p in projs"><td>${dict2[str(p)]}</td></py:for></tr>
+  </table>
+  <input type="button" onclick="exportTableToExcel('exportExcel')" value="exportExcel"/>
+ </fieldset>
+</div>
+</body>
+</html>
