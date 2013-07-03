@@ -1,0 +1,1494 @@
+#!/usr/bin/env perl
+#
+# This script provides interface to manage project repositories.
+
+use strict;
+use warnings;
+use Carp;
+
+use Switch;
+use Getopt::Long;
+use File::Basename;
+use File::Copy;
+use File::Path;
+
+
+#----------------------------------------------------------------------
+# Variables
+#----------------------------------------------------------------------
+
+my $TRAC = "/home/trac";
+my $ROOT = "/home/hg";
+my $REPO = "$ROOT/repos";
+my $SCRIPT = "$ROOT/scripts";
+
+my ($MODULES, $PROJ_MODULES, $USER, $STDACL, $ACL_FILE, $BRANCH, $RELEASEVER,
+    $RELEASE, $TRAC_SITE, $SERVER_ROOT);
+$MODULES = "";
+$PROJ_MODULES = "";
+
+my $PROJECT_NAME_REGEX = qr/[\|=,#:]/;
+
+# Default modules in EMP. If anything's changed, this list should be updated.
+my @EMP_MODULES = ("jbulb", "ewp", "console", "pole", "iphone", "android", "brew");
+
+my $DEFAULT_TRAC_PERMISSIONS = "MILESTONE_VIEW ROADMAP_VIEW SEARCH_VIEW TICKET_ADMIN TIMELINE_VIEW WIKI_CREATE WIKI_MODIFY WIKI_VIEW REPORT_CREATE REPORT_DELETE REPORT_MODIFY REPORT_SQL_VIEW REPORT_VIEW CHANGESET_VIEW LOG_VIEW";
+
+
+#----------------------------------------------------------------------
+# Helpers
+#----------------------------------------------------------------------
+
+# print the message.
+sub status {
+  my ($msg) = @_;
+  print "\n*************************\n";
+  print "$msg\n";
+  print "*************************\n\n";
+}
+
+sub error {
+    my ($msg) = @_;
+    die "
+------------------------------------------------------------------
+Failed: $msg
+------------------------------------------------------------------
+";
+}
+
+sub run {
+    my ($cmdline, $errmsg);
+    $cmdline = shift;
+    $errmsg = shift;
+    print "Running: $cmdline\n";
+    system($cmdline);
+    if ($? != 0) {
+    if (defined($errmsg)) {
+        error $errmsg . "\n" . $cmdline;
+    } else {
+        error $cmdline;
+    }
+    }
+}
+
+sub run_allow_fail {
+    my ($cmdline, $errmsg) = @_;
+    print "Running: $cmdline\n";
+    system($cmdline);
+}
+
+# Read a password from STDIN without echoing.
+sub read_password {
+    my ($p1, $p2, $done);
+    $done = 0;
+    while (!$done) {
+      print "Please enter your password: ";
+      system("stty -echo");
+      chop($p1 = <STDIN>);
+      print "\n";
+      print "Please enter it again: ";
+      chop($p2 = <STDIN>);
+      system("stty echo");
+      if ($p1 eq $p2) {
+          $done = 1;
+          print "\n";
+      }else{
+          print "\nTwo passwords do not match. Please try again.\n";
+      }
+    }
+    return $p1;
+}
+
+# Print usage of this script.
+sub usage {
+    print <<EOF;
+Usage: $0 Commands [Options]
+
+Commands:
+ init <proj>    Create a new project with the given name, will create HG
+        repository and TRAC site.
+ clean <proj>    Remove all related information about a given project.
+ am <proj>    Add modules to the given project.
+ dm <proj>    Delete modules from the given project (specified in --proj-mods)
+ au <proj>    Add a user to the given project.
+ du <proj>    Delete a user to the given project.
+ lm <proj>    List all modules of a project.
+ lu <proj>    List all users of a project.
+ lr <proj>    List all releases of a project.
+ mr <proj>    Make a versioned release.
+ mb <proj>    Make a release branch.
+ aa <proj>    Add a user to the given module.
+ da <proj>    Delete a user to the given module.
+Note: project name is the Mercurial path relative to /proj. It may contain
+'/' but cannot contain white spaces.
+
+Options:
+ --help        Print this document.
+ --src-mods    A comma-separated list of modules to be cloned. Each module
+        name is a path relative to /proj. For example, 
+        "emp/ewp,emp/jbulb". If a module does not exist, a warning
+        will be raised. See "mod_spec" below for details. (init, am) 
+ --proj-mods    A comma-separated list of new module to be created. This
+        module will sit inside the current project, therefore only
+         name is accepted. (init, am, dm). Hnce, this name cannot
+        contain '/'.
+ --clone-emp    Clone a default set of modules in emp: ewp, pole, console,
+        jbulb.
+ --user        The username to be added or deleted from the project's
+        access. (Both HG and TRAC will be changed.) You will be asked
+        to type the password. (am, dm)
+ --acl        A htpasswd file when creating a project. If nothing is
+        given, we will use the default TRAC site's ACL file. (am)
+ --branch    If given, a release will be made from this branch. (mr)
+ --release    If given, a branche will be made from this release. (mb)
+ --version    Release or branch version string. (mr, mb)
+ --trac        Basename of the local trac site, e.g., bankcomm. If specified,
+        it will integrate the created project into the given trac site
+         instead of creating a new trac site. (init, am, dm, mr, mb)
+ --root        If given, this argument specifies the root path to the project
+        to be cloned to the local project (that is, the projects of 
+        all modules in the --src-mods argument. It can be a URL, such as
+        https://dev/hg/proj, or an absolute path on the local server,
+        such as /home/hg/repos/proj/. 
+
+Module strings mod_spec in init and am actions:
+
+  The module list is a list of "mod_spec" strings, separated by ','. Each 
+  mod_spec string contains a source module spec, and optioanlly a destination
+  module spec.  The source module spec may be:
+
+  (1) relative path to the /proj, 
+  (2) absolute path, 
+  (3) URL (http or https).  
+
+  It may contain a destination spec, separated by '='.  Destination spec is the
+  path to the module to be created, and it is the path relative to the current
+  project.
+
+  Examples mod_spec strings are:
+
+  (1) boc/jbulb,boc2/jbulb=jbulb-boc2
+      This will create two modules, jbulb from /proj/boc/jbulb, and jbulb-boc2
+      from /proj/boc2/jbulb.
+  (2) boc2/jbulb:12=jbulb_test
+      This allows a revision number from which the source module is cloned.
+  (3) https://dev/hg/proj/boc/jbulb=jbulb.test
+      This clones source module from the specified URL to a module jbulb.test
+      in the specified project.
+
+  In order to make this work, one must make sure that ~/.hgrc is correctly
+  configured so that we can access remote repo using pre-defined identities. 
+  For example, if we access remote server https://devvm, ~/.hgrc must contain
+  the following section:
+    [auth]
+    devvm.prefix = https://devvm
+    devvm.username = my_name
+    devvm.password = my_pwd
+EOF
+}
+
+sub is_url {
+    my ($str) = @_;
+    return (($str =~ /^file:\/\//) || 
+        ($str =~ /^http:\/\//) || 
+        ($str =~ /^svn+http/) ||
+        ($str =~ /^https:\/\//));
+}
+
+
+#----------------------------------------------------------------------
+# Module related functions.
+#----------------------------------------------------------------------
+
+#if the project is exist
+sub  is_project_exist{
+    my ($proj) = @_;
+    my $proj_root = "/home/hg/repos/proj";
+
+    opendir(DIR, $proj_root);
+    my @va;
+    my $f;
+        
+    @va = readdir(DIR);
+    closedir(DIR);
+    
+    foreach $f (@va) {
+        if($f eq $proj){
+            return 1;
+        }       
+    }
+    return 0;
+}
+
+#if the module is exist
+sub  is_module_exist{
+    my ($proj,$module) = @_;
+    my $proj_root = "/home/hg/repos/proj/$proj";
+
+    foreach my $m (list_modules($proj_root)) {
+        if($m eq $module){
+            return 1;
+        }       
+    }
+    return 0;
+}
+
+
+# NOTE: the incoming module name may contain full path under /proj
+# of the incoming module.
+sub clone_module {
+    my ($proj, $trac_mod, $mod_spec) = @_;
+
+    my ($src, $dst, $proj_mod, $remote);
+    my @t = split /=/, $mod_spec;
+    if (is_url($t[0])) {
+    $src = $t[0];
+    $remote = 1;
+    } elsif ($t[0] =~ /^\//) {
+    # If absolute path, don't concatenate.
+    $src = $t[0];
+    $remote = 0;
+    } else {
+    $remote = 0;
+    if (length($SERVER_ROOT) > 0) {
+        $src = "$SERVER_ROOT/$t[0]";
+        if (is_url($src)) {
+        $remote = 1;
+        } elsif ($src !~ /^\//) {
+        $src = "$REPO/proj/$src";
+        }
+    } else {
+        $src = "$REPO/proj/$t[0]";
+    }
+    }
+
+    my $revision = "";
+    if ($src =~ /:([0-9]+)/) {
+    my $tmp = $src;
+    $tmp =~ s/(.*):([0-9]+)/$1 $2/;
+    @t = split / /, $tmp;
+    $src = $t[0];
+    $revision = "-r $t[1]";
+    }
+
+    # NOTE:
+    # - Again, we should support both relative path and absolute path for
+    #  the target repository.
+    if ($#t == 1) {
+    $proj_mod = $t[1];
+    error "Target module name cannot contain '|', ',', '=', ':'."
+      if ($proj_mod =~ $PROJECT_NAME_REGEX);
+    } else {
+    # Find the last part of the incoming module name and use that 
+    # as the destination module name.
+    my @buf = split('/', $t[0]);
+    $proj_mod = $buf[$#buf];
+    }
+    if ($proj_mod =~ /^\//) {
+    $dst = $proj_mod;
+    } else {
+    $dst = "$REPO/proj/$proj/$proj_mod";
+    }
+
+    status "Cloning from $src to $dst";
+    unless ($remote || (-r $src)) {
+    status "WARNING: Cannot read or find local module $src";
+    return;
+    }
+    if (-e "$dst") {
+    status "WARNING: Local module $dst already exists.";
+    return;
+    }
+    run("hg clone $revision $src $dst");
+
+    my $str = "$TRAC/$trac_mod";
+    $str =~ s/\//\\\//g;
+    my $str2 = $proj_mod;
+    $str2 =~ s/.*\/([^\/]+)/$1/;
+    run("cat $ROOT/scripts/hgrc | sed \"s/MY_TRAC_ROOT/$str/g\" | sed \"s/MY_REPO_NAME/$str2/g\" >> $dst/.hg/hgrc");
+    return $proj_mod;
+}
+
+sub new_module {
+    my ($proj, $trac_mod, $mod) = @_;
+
+    my $dst = "$REPO/proj/$proj/$mod";
+
+    # Check the existence of the module
+    if (-e $dst) {
+    status "***WARNING: Module $dst already exists";
+    return;
+    }
+
+    status "Creating module $mod";
+
+    # If we are in init, by this time we may not have TRAC site yet, so it's ok if 
+    # hg commit comes up with a warning.
+    my $str2 = "$TRAC/$trac_mod";
+    $str2 =~ s/\//\\\//g;
+    my $str = "mkdir -p $dst && \
+hg init $dst && \
+cat $ROOT/scripts/hgrc | sed \"s/MY_TRAC_ROOT/$str2/g\" | sed \"s/MY_REPO_NAME/$mod/g\" >> $dst/.hg/hgrc && \
+cat $ROOT/scripts/hgignore >> $dst/.hgignore && \
+cd $dst && \
+hg add .hgignore && \
+hg commit -m \"Added global ignore file.\"";
+    run($str, "Failed to add new module $mod");
+
+    return $mod;
+}
+
+# This function finds the main module of a project among its module list.
+# The importance is determined by the order of @EMP_MODULE. If none is found,
+# we simply pick the first module of this project.
+sub infer_main_module {
+    my (@mods) = @_;
+    my $pos = 1000000;
+    foreach my $m (@mods) {
+    my $i = 0;
+    foreach my $n (@EMP_MODULES) {
+        if ($m eq $n) {
+            last;
+        }
+        $i = $i + 1;
+    }
+    $pos = $i if ($pos < $i);
+    }
+    if ($pos <= $#EMP_MODULES) {
+        return $pos;
+    } else {
+        return $mods[0];
+    }
+}
+
+# Get a list of users from a .htaccess file
+sub find_users_from_acl {
+    my ($filename) = @_;
+    my @users;
+    open(F, "<$filename") || error "Cannot read $filename";
+    while (<F>) {
+        next if /^#/;
+        my @buf = split(/:/);
+        push(@users, $buf[0]);
+    }
+    close(F);
+    return @users;
+}
+
+sub parse_cmods {
+    my ($str) = $_;
+    my @mods;
+    foreach my $b (split(/,/, $str)) {
+        my @t = split /\|/, $b;
+        if ($#t == 1) {
+            push(@mods, [$t[0], $t[1]]);
+        } else {
+            push(@mods, [$t[0], $t[0]]);
+        }
+    }
+    return @mods;
+}
+
+# Helper for cmd_init, cmd_add_module
+sub process_modules {
+    my ($proj, $trac_mod, $clone_mods, $new_mods) = @_;
+
+    # Clone or add modules into this directory.
+    my @c_mod = split(/,/, $clone_mods);
+    my @n_mod = split(/,/, $new_mods);
+    my @proj_mods;
+    foreach my $m (@c_mod) {
+        next if $m eq "";
+        my $mod = clone_module($proj, $trac_mod, $m);
+        push(@proj_mods, $mod) if (defined($mod) && length($mod) > 0);
+    }
+    foreach my $m (@n_mod) {
+        next if $m eq "";
+        my $mod = new_module($proj, $trac_mod, $m);
+        push(@proj_mods, $mod) if (defined($mod) && length($mod) > 0);
+    }
+    return @proj_mods;
+}
+
+# Make sure that all permissions are done right.
+sub fix_permissions {
+    my ($proj, $trac_mod) = @_;
+    run("chown -R apache:apache $REPO/proj/$proj $TRAC/$trac_mod $ROOT/acl");
+}
+
+#change the ticket work flow in ini file
+sub change_ticket_flow{
+    my ($conf_file) = @_; 
+    my  ($ticket_exist)=1;
+    my  $ticket_flag=0;
+ 
+    open(FD, "<$conf_file");
+    open(FW, ">$conf_file.tmp");
+    while (<FD>) {
+        if (/\[ticket\]/){
+            $ticket_exist=0;
+            last;
+        }
+        if (/\[ticket-workflow\]/){
+            $ticket_flag=1;         
+      print FW <<END;
+[ticket]
+default_component = 
+default_milestone = 
+default_priority = major
+default_type = defect
+default_version = 
+restrict_owner = false
+
+[ticket-custom]
+qa_status = radio
+qa_status.label = Regression
+qa_status.options = open|verified
+qa_status.value = 0
+
+[ticket-workflow]
+accept = new -> assigned
+accept.operations = set_owner_to_self
+accept.permissions = TICKET_MODIFY
+leave = * -> *
+leave.default = 1
+leave.operations = leave_status
+reassign = new,assigned,reopened -> new
+reassign.operations = set_owner
+reassign.permissions = TICKET_MODIFY
+reopen = closed -> reopened
+reopen.operations = del_resolution
+reopen.permissions = TICKET_CREATE
+resolve = new,assigned,reopened -> closed
+resolve.operations = set_resolution
+resolve.permissions = TICKET_MODIFY
+
+END
+
+        }elsif(/^\[/) {
+            print FW;
+            if($ticket_flag){
+                $ticket_flag = 0;
+            }
+        }else{
+            if(! $ticket_flag){
+                print FW;
+            }
+        }
+    }
+    close(FW);
+    close(FD);
+    if($ticket_exist){
+        run("/bin/mv $conf_file $conf_file.bak");
+        run("/bin/mv $conf_file.tmp $conf_file"); 
+        run("chown apache:apache $conf_file");
+        run("chown apache:apache $conf_file.bak");
+    }   
+}
+
+
+sub setup_trac_site {
+    my ($trac, $proj_path) = @_;
+
+    status "Creating TRAC site.";
+    my $trac_mod = basename($trac);
+    my $str = "trac-admin $trac initenv --inherit=/etc/trac/trac.ini $trac_mod sqlite:db/trac.db hg ''";
+    run($str);
+
+    # Edit trac.ini:
+    # - Make sure that inherit is there.
+    # - Setup trac logo; replace all existing ones if necessary.
+    status "Setup trac.ini.";
+    copy("$ROOT/scripts/conf/rytong.png", "$trac/htdocs/");
+    my $trac_conf = "$trac/conf/trac.ini";
+    open(F, "<$trac_conf") || error "Cannot read $trac_conf";
+    open(O, ">$trac_conf.tmp") || error "Cannot create $trac_conf.tmp";
+    my $found_trac_logo = 0;
+    my $found_inherit = 0;
+    while (<F>) {
+    /^\[header_logo\]/ && do {
+        $found_trac_logo = 1;
+        next;
+    };
+    
+#    /^\[ticket_workflow\]/ && do {        
+#        next;
+#    };
+    
+    /^\[trac\]/ && do {
+        print O;
+        print O <<END;
+repository_dir =
+repository_type = hg
+END
+        next;
+    };
+    /^\[inherit\]/ && do {
+        $found_inherit = 1;
+    };
+    /^\[/ && do {
+        $found_trac_logo = 0;
+    };
+    print O unless $found_trac_logo;
+    }
+    # XXX FIXME: we should allow creation of project-specific trac mailing lists.
+    print O <<END;
+
+[attachment]
+max_size = 1073741824
+
+[header_logo]
+alt = RYTong
+link = http://www.rytong.net
+src = site/rytong.png
+width = 203
+height = 46
+
+[notification]
+always_notify_owner = true
+always_notify_reporter = true
+always_notify_updater = true
+smtp_default_domain = rytong.com
+smtp_enabled = true
+smtp_from = trac\@rytong.com
+smtp_password =
+smtp_port = 25
+smtp_replyto = trac\@rytong.com
+smtp_server = mail.rytong.com
+smtp_user =
+END
+    unless($found_inherit) {
+    print O <<END;
+[inherit]
+file = /etc/trac/trac.ini
+END
+    }
+    close(O);
+    close(F);
+    move($trac_conf, "$trac_conf.orig");
+    move("$trac_conf.tmp", $trac_conf);
+    change_ticket_flow($trac_conf);
+}
+
+sub setup_access {
+    my ($proj, $src_acl, $init_trac) = @_;
+
+    status "Setting up access rules.";
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    copy($src_acl, $proj_acl) || error "Failed to copy ACL file $ACL_FILE.";
+
+    # Change HTTPD configuration file to activate access rules.
+    my $conf_skip = 0;
+    my $CONF_ROOT = "/home/hg/scripts/conf";
+    open(O, ">$CONF_ROOT/projects.conf.tmp");
+    open(F, "<$CONF_ROOT/projects.conf") || error "Cannot read project conf file";
+    while (<F>) {
+    /PROJECT_BEGIN/ && do {
+        my @buf = split;
+        if ($buf[$#buf] eq $proj) {
+        status "Configuration $proj exists. It will be replaced.";
+        $conf_skip = 1;
+        next;
+        }
+        print O unless $conf_skip;
+        next;
+    };
+
+    /PROJECT_END/ && do {
+        print O unless ($conf_skip);
+        $conf_skip = 0;
+        next;
+    };
+
+    /PROJECT_GROUP_END/ && do {
+        print O <<END;
+\# PROJECT_BEGIN $proj
+<Location /hg/proj/$proj>
+    AuthType Basic
+    AuthName "Hg-proj-$proj"
+    AuthUserFile $proj_acl
+    Require valid-user
+</Location>
+END
+        if ($init_trac) {
+        print O <<END;
+<LocationMatch "/proj/$proj">
+    AuthType Basic
+    AuthName "Trac-proj-$proj"
+    AuthUserFile $proj_acl
+    Require valid-user
+</LocationMatch>
+END
+        }
+        print O "# PROJECT_END $proj\n\n";
+        print O;
+        next;
+    };
+
+    print O unless $conf_skip;
+    }
+    close(F);
+    close(O);
+    move("$CONF_ROOT/projects.conf", "$CONF_ROOT/projects.conf.orig");
+    move("$CONF_ROOT/projects.conf.tmp", "$CONF_ROOT/projects.conf");
+}
+
+sub cmd_clean {
+    my ($proj) = @_;
+    my $trac_mod = get_trac_mod($proj);
+    my $root = "$ROOT/obsolete/$proj-" . time;
+    if (-d $root) {
+    run("rm -rf $root");
+    }
+
+    status "Removing data files.";
+    run("mkdir -p $root");
+    run("mv $REPO/proj/$proj $root/hg") if (-d "$REPO/proj/$proj");
+    run("mv $TRAC/$trac_mod $root/trac") if (-d "$TRAC/$trac_mod");
+
+    # Modify projects.conf to remove ACLs for this project
+    status "Removing configurations.";
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    run_allow_fail("mkdir $root/acl ; mv $proj_acl $root/acl");
+    my $conf_skip = 0;
+    my $empty_line = 0;
+    my $CONF_ROOT = "/home/hg/scripts/conf";
+    open(O, ">$CONF_ROOT/projects.conf.tmp");
+    open(F, "<$CONF_ROOT/projects.conf") || error "Cannot read project conf file";
+    while (<F>) {
+    /PROJECT_BEGIN/ && do {
+        my @buf = split;
+        if ($buf[$#buf] eq $proj) {
+            $conf_skip = 1;
+            next;
+        }
+    };
+    /PROJECT_END/ && do {
+        if ($conf_skip) {
+            $conf_skip = 0;
+            next;
+        }
+    };
+    /^\n$/ && do {
+        $empty_line = $empty_line + 1;
+        print O unless ($empty_line > 1);
+        next;
+    };
+    $empty_line = 0;
+    print O unless $conf_skip;
+    }
+    close(F);
+    close(O);
+    move("$CONF_ROOT/projects.conf", "$CONF_ROOT/projects.conf.orig");
+    move("$CONF_ROOT/projects.conf.tmp", "$CONF_ROOT/projects.conf");
+    
+    status("Project $proj moved into $root.")
+}
+
+sub cmd_init {
+    my ($proj) = @_;
+
+    my $proj_path = "$REPO/proj/$proj";
+    if (-e $proj_path) {
+    error "Project $proj_path already exists in Mercurial.";
+    }
+
+    my $trac;
+    my $trac_mod;
+    my $init_trac;
+    if (defined($TRAC_SITE)) {
+        $trac_mod = basename($TRAC_SITE);
+        $trac = "$TRAC/$TRAC_SITE";
+        $init_trac = 0;
+    } else {
+        $trac_mod = $proj;
+        $trac = "$TRAC/$proj";
+        $init_trac = 1;
+        error "TRAC site $trac already exists." if (-e $trac);
+    }
+
+    # If we are cloning from exactly one project, we should clone its
+    # ACL file instead of using the default ACL.
+    my $src_acl = $ACL_FILE;
+    if (defined($SERVER_ROOT) && length($SERVER_ROOT) > 0 &&
+        ($SERVER_ROOT !~ /^http/)) {
+        my $name = $SERVER_ROOT;
+        $name =~ s/.*\/proj\/([^\/]+)(\/.*)*/$1/;
+        $name = "$ROOT/acl/.htaccess-proj-$name";
+        if (-r $name) {
+            $src_acl = $name;
+        }
+    } elsif ($STDACL) {
+        $src_acl = "$ROOT/acl/.htaccess";
+    }
+    error "Cannot read ACL file $src_acl." unless (-r $src_acl);
+
+    # Create Mercurial directories.
+    mkdir("$proj_path", 0750) || error "Cannot create directory $proj_path";
+    mkdir("$proj_path/branches", 0750);
+    mkdir("$proj_path/releases", 0750);
+
+    # Create TRAC site.
+    if ($init_trac) {
+        setup_trac_site($trac, $proj_path);
+    }
+
+    # Clone or add modules into this directory. Do this after creating the
+    # trac site, so that we may add hgignore into new modules (if any).
+    my $clone_mods = $MODULES;
+    unless ($clone_mods =~ /releng/) {
+    # We must include releng from the source project into this project.
+    if ($SERVER_ROOT ne "") {
+        $clone_mods = "$SERVER_ROOT/releng," . $clone_mods;
+        } else {
+            $clone_mods = "emp/releng," . $clone_mods;
+        }
+    }
+    my @proj_mods = process_modules($proj, $trac_mod, $clone_mods, $PROJ_MODULES);
+
+    # Setup project access rules
+    setup_access($proj, $src_acl, $init_trac);
+
+    status "Adding repositories to TRAC.";
+    foreach my $m (@proj_mods) {
+        run_allow_fail("trac-admin $trac repository add $m $proj_path/$m hg");
+        add_module_user($proj,$m,"zhao.zhengyu");
+        add_module_user($proj,$m,"zhang.xueming");
+        add_module_user($proj,$m,"haoboy");                
+    }
+
+
+    # Setup TRAC user accesses
+    status "Setting up TRAC permissions.";
+    if ($init_trac) {
+        run("trac-admin $trac permission remove anonymous '*'");
+        run("trac-admin $trac permission remove authenticated '*'");
+        run("trac-admin $trac permission add developer $DEFAULT_TRAC_PERMISSIONS");
+        run("trac-admin $trac permission add haoboy TRAC_ADMIN");
+        run("trac-admin $trac permission add zhang.xueming TRAC_ADMIN");
+        run("trac-admin $trac permission add zhao.zhengyu TRAC_ADMIN");
+        run("trac-admin $trac permission add zhang.hui TICKET_ADMIN");
+        run("trac-admin $trac permission add zhang.hui MILESTONE_ADMIN");
+    }
+    my @proj_users = find_users_from_acl("$ROOT/acl/.htaccess-proj-$proj");
+    foreach my $user (@proj_users) {
+        run("trac-admin $trac permission add $user developer");
+        #add the module acl file to this module
+    }
+
+    # Make sure that all permissions are done right.
+    fix_permissions($proj, $trac_mod);
+
+    # NOTE: just in case, we run an upgrade at the end.
+    status "Syncing TRAC repositories.";
+    run("trac-admin $trac repository resync '*'");
+    run("trac-admin $trac upgrade");
+    run("chown -R apache:apache $TRAC/$proj");
+
+    if ($init_trac) {
+        status "Restarting httpd.";
+        run("$SCRIPT/restart-httpd");
+    }
+
+    my $str = join(" ", @proj_mods);
+    my $str2 = join(" ", @proj_users);
+    print <<END;
+----------------------------------------------------------------------
+Added project $proj
+Modules: $str
+Users: $str2
+----------------------------------------------------------------------
+END
+}
+
+sub get_trac_mod {
+    my ($proj) = @_;
+    error "Bad argument." unless (defined($proj) && length($proj) > 0);
+    if (defined($TRAC_SITE) && length($TRAC_SITE) > 0) {
+    return basename($TRAC_SITE);
+    } else {
+    return $proj;
+    }
+}
+
+
+# Add software modules from repository
+sub cmd_add_module {
+    my ($proj) = @_;
+    my $proj_path = "$REPO/proj/$proj";
+    unless (-r $proj_path) {
+        error "Cannot read project at $proj_path";
+    }
+
+    # Add or clone modules.  Can be a mod_spec string.
+    my @proj_mods = process_modules($proj, $proj, $MODULES, $PROJ_MODULES);
+
+    # Rearrange TRAC repositories.
+    my $trac_mod = get_trac_mod($proj);
+    if (-e "$TRAC/$trac_mod") {
+        foreach my $m (@proj_mods) {
+            run("trac-admin $TRAC/$trac_mod repository add $m $REPO/proj/$proj/$m hg");
+            run("trac-admin $TRAC/$trac_mod repository sync $m");
+            #add the module acl file to this module
+            add_module_user($proj,$m,"zhao.zhengyu");
+            add_module_user($proj,$m,"zhang.xueming");
+            add_module_user($proj,$m,"haoboy");           
+        }
+    }
+    
+
+
+
+    fix_permissions($proj, $trac_mod);
+
+    my $str = join(" ", @proj_mods);
+    print <<END;
+----------------------------------------------------------------------
+Added modules: $str
+----------------------------------------------------------------------
+END
+}
+
+# Remove software modules from repository,here should remove module access .htaccess, and change projects.conf 
+sub cmd_del_module {
+    my ($proj) = @_;
+    my $proj_path = "$REPO/proj/$proj";
+    unless (-r $proj_path) {
+    error "Cannot read project at $proj_path";
+    }
+
+    # XXX: This is a list of module names within this project.
+    my @proj_mods = split(/,/, $PROJ_MODULES);
+    unless ($#proj_mods >= 0) {
+        error "No modules to delete.";
+    }
+
+    my $trac_mod = get_trac_mod($proj);
+
+    # Create backup directory
+    my $dst_dir = "$ROOT/obsolete/$proj-" . time;
+    foreach my $m (@proj_mods) {
+        my $mod_path = "$proj_path/$m";
+        my $dst_path = "$dst_dir/$m";
+        if (-e $mod_path) {
+            run("mkdir -p " . dirname($dst_path));
+            run("mv $mod_path $dst_path");
+            if (-e "$TRAC/$trac_mod") {
+            run("trac-admin $TRAC/$trac_mod repository remove $m");
+            }
+        } else {
+            status "Module $mod_path is not found.";
+        }
+    }
+
+    fix_permissions($proj, $trac_mod);
+}
+
+sub list_modules {
+    my ($dir) = @_;
+    my @mods;
+    foreach my $f (glob("$dir/*")) {
+        if ((-r $f) && (-d "$f/.hg")) {
+            my $n = basename($f);
+            push(@mods, $n);
+        }
+    }
+    return @mods;
+}
+
+sub cmd_list_modules {
+    my ($proj) = @_;
+    foreach my $m (list_modules("$REPO/proj/$proj")) {
+    print $m, "\n";
+    }
+}
+
+sub cmd_list_releases {
+    my ($proj) = @_;
+    my $found = 0;
+    my $dir = "$REPO/proj/$proj/releases";
+    foreach my $f (glob("$dir/*")) {
+    if (-r $f) {
+        $found = 1;
+        my $n = basename($f);
+        print "$n\n";
+    }
+    }
+    status "Did not find any release in $proj." unless $found;
+}
+
+# Given a project or a release, create a release branch from it.
+sub cmd_make_release {
+    my ($proj) = @_;
+
+    my $ver = $RELEASE;
+    error "No release version." unless ($ver ne "");
+
+    my $src_dir = "$REPO/proj/$proj";
+    my $branch_dir = "$src_dir/branches";
+    my $rel_root = "$src_dir/releases";
+    error "Did not find $rel_root" unless (-w $rel_root);
+
+    # Make sure that version string conforms to standard
+    error "Release version must be like xx.yy.zz(-[CBR])."
+      unless ($ver =~ /^[0-9]+\.[0-9]+\.[0-9]+(-[CBR])*$/);
+
+    my $rel_dir = "$rel_root/$ver";
+    error "Release $rel_dir already exists." if (-e $rel_dir);
+    mkdir($rel_dir, 0750);
+
+    if (defined($BRANCH)) {
+    $src_dir = "$branch_dir/$BRANCH";
+    error "Cannot find branch directory $src_dir\n" unless (-r $src_dir);
+    }
+
+    status "Making release $ver in $rel_root.";
+
+    # Tag every source module of this release tag.
+    #
+    # NOTE: we must tag using full project-version string, because we may
+    # share the same module across various projects.
+    my $pwd = `pwd`;
+    my @mods = list_modules($src_dir);
+    foreach my $m (@mods) {
+        my $mod_spec = "$src_dir/$m=$rel_dir/$m";
+        clone_module($proj, $proj, $mod_spec);
+        add_module_access_right($proj,"$proj/releases/$ver/$m","/home/hg/acl/.htaccess-proj-$proj-$m");
+    }
+
+    # NOTE: we have to tag in the release directory then push back to the
+    # source directory.  If we do this in the source, we may not have the 
+    # right working copy.
+    foreach my $m (@mods) {
+    chdir("$rel_dir/$m");
+    print "Tagging in $rel_dir/$m\n";
+    run("hg tag $proj-$ver && hg push");
+        # Fix permissions. Note: we cannot change directory permissions. Local
+        # cloned directories .hg are linked together. 
+        run("sed 's/^allow_push/#allow_push/' .hg/hgrc > hgrc.tmp ; mv hgrc.tmp .hg/hgrc");
+    chdir($pwd);
+    }
+
+    # Insert new version number into trac
+    my $trac_mod = get_trac_mod($proj);
+    if (-e "$TRAC/$trac_mod") {
+    run("trac-admin $TRAC/$trac_mod version add $ver");
+    }
+
+    status "Done releasing $ver.\n\
+Please manually checkout and update modules wherever necessary.";
+}
+
+sub cmd_make_branch {
+    my ($proj) = @_;
+
+    my $ver = $RELEASE;
+    error "No release version." unless ($ver ne "");
+
+    # Make sure that version string conforms to standard
+    error "Branch version must be like xx.yy."
+      unless ($ver =~ /^[0-9]+\.[0-9]+$/);
+
+    my $src_dir = "$REPO/proj/$proj";
+    my $release_dir = "$src_dir/releases";
+    my $rel_root = "$src_dir/branches";
+    error "Did not find $rel_root" unless (-w $rel_root);
+
+    my $rel_dir = "$rel_root/$ver";
+    error "Branch $rel_dir already exists." if (-e $rel_dir);
+    mkdir($rel_dir, 0750);
+
+    if (defined($RELEASEVER)) {
+    $src_dir = "$release_dir/$RELEASEVER";
+    error "Cannot find release directory $src_dir\n" unless (-r $src_dir);
+    }	
+	
+    status "Making branch $ver in $rel_root.";
+    my $pwd = $ENV{'PWD'};
+    my @mods = list_modules($src_dir);
+    foreach my $m (@mods) {
+        my $mod_spec = "$src_dir/$m=$rel_dir/$m";
+        clone_module($proj, $proj, $mod_spec);
+        add_module_access_right($proj,"$proj/branches/$ver/$m","/home/hg/acl/.htaccess-proj-$proj-$m");
+    }
+    # Tag every source module of this release tag.  
+    # NOTE: we have to tag in the release directory then push back to the
+    # source directory.  If we do this in the source, we may not have the 
+    # right working copy.
+    foreach my $m (@mods) {
+        chdir("$rel_dir/$m");
+        print "Tagging in $rel_dir/$m\n";
+        run("hg tag $proj-$ver && hg push");
+        chdir($pwd);
+    }
+
+    # Fix permissions
+    run("chown -R apache:apache $src_dir $rel_dir");
+
+    status "Done making release branch $ver.\n\
+Please manually checkout and update wherever necessary.";
+}
+
+
+#----------------------------------------------------------------------
+# User related functions
+#----------------------------------------------------------------------
+
+# Add a single user by typing passwords from command line.
+sub prepare_one_user_acl {
+    my ($user, $proj_acl) = @_;
+    my $file = "$proj_acl.tmp2";
+    my $pwd = read_password;
+    run("htpasswd -b -c $file $user $pwd");
+    return $file;
+}
+
+sub add_acl_files {
+    my ($proj_acl, $tba) = @_;
+    merge_acl_files($proj_acl, $tba, 1);
+}
+
+sub del_acl_files {
+    my ($proj_acl, $tba) = @_;
+    merge_acl_files($proj_acl, $tba, 0);
+}
+
+# Only meant to be called by add_acl_files or del_acl_files.
+# If $add_drop == 1, add $tba into $proj_acl; otherwise remove.
+sub merge_acl_files {
+    my ($proj_acl, $tba, $add_drop) = @_;
+
+    error "Cannot read $proj_acl" unless (-r $proj_acl);
+    error "Cannot read ACL file $tba" unless (-r $tba);
+
+    my %users;
+    open(F, "<$proj_acl");
+    while (<F>) {
+    chop;
+    next if /^#/;
+    my @b = split(/:/);
+    next if (length($b[0]) == 0);
+    $users{$b[0]} = $b[1];
+    }   
+    
+    open(F, "<$tba");
+    while (<F>) {
+    chop;
+    next if /^#/;
+    my @b = split(/:/);
+    if (defined($users{$b[0]})) {
+        status "Replacing user $b[0]";
+    }
+    if ($add_drop) {
+        $users{$b[0]} = $b[1];
+    } else {
+        delete($users{$b[0]});
+    }
+    }
+    close(F);
+
+    open(O, ">$proj_acl.tmp");
+    foreach my $k (keys %users) {
+    print O "$k:$users{$k}\n";
+    }
+    close(O);
+
+    move($proj_acl, "$proj_acl.orig");
+    move("$proj_acl.tmp", $proj_acl);
+}
+
+# Allow a user to access both TRAC and HG
+sub cmd_add_user {
+    my ($proj) = @_;
+
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    my $acl;
+    my $tmp_acl = 0;
+    if (defined($ACL_FILE) && (-r $ACL_FILE)) {
+    $acl = $ACL_FILE;
+    } else {
+    error "No user is given." if (!defined($USER) || length($USER) <= 0);
+    $acl = prepare_one_user_acl($USER, $proj_acl);
+    $tmp_acl = 1;
+    }
+
+    add_acl_files($proj_acl, $acl);
+
+    my $trac_mod = get_trac_mod($proj);
+    if (-e "$TRAC/$trac_mod") {
+    foreach my $u (find_users_from_acl($acl)) {
+        run("trac-admin $TRAC/$trac_mod permission add $u developer");
+    }
+    }
+    run("chown -R apache:apache $ROOT/acl");
+
+    if ($tmp_acl) {
+    unlink($acl);
+    }
+}
+
+sub cmd_del_user {
+    my ($proj) = @_;
+
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    my $acl;
+    my $tmp_acl = 0;
+    if (defined($ACL_FILE) && (-r $ACL_FILE)) {
+        $acl = $ACL_FILE;
+    } else {
+        error "No user is given." if (!defined($USER) || length($USER) <= 0);
+        $acl = "$proj_acl.tmp2";
+        open(O, ">$acl");
+        print O "$USER:aaa\n";
+        close(O);
+        $tmp_acl = 1;
+    }    
+
+    del_acl_files($proj_acl, $acl);
+    
+    #should delete user in all module access file
+    foreach my $m (list_modules("$REPO/proj/$proj")) {
+        my $mod_acl="$ROOT/acl/.htaccess-proj-$proj-$m";
+        if(-e $mod_acl){
+            del_acl_files($mod_acl, $acl);
+        }
+    }
+
+    my $trac_mod = get_trac_mod($proj);
+    if (-e "$TRAC/$trac_mod") {
+        foreach my $u (find_users_from_acl($acl)) {
+            run("trac-admin $TRAC/$trac_mod permission remove $u '*'");
+        }
+    }
+    run("chown -R apache:apache $ROOT/acl");
+
+    if ($tmp_acl) {
+        unlink($acl);
+    }
+}
+
+sub cmd_list_users {
+    my ($proj) = @_;
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    open(F, "<$proj_acl");
+    while (<F>) {
+    next if /^#/;
+    my @b = split(/:/);
+    print $b[0], "\n";
+    }
+    close(F);
+}
+
+#when add a branches, if one module exist access right, the module in this branches should obey
+sub add_module_access_right{
+    my ($proj,$mod_path, $mod_acl) = @_;    
+    #if the /home/hg/.htaccess-proj-&proj-$module exist, than should add access 
+    if(-e $mod_acl){
+        status "add $mod_path access right";
+        print_one_location($proj,$mod_path, $mod_acl);
+    }
+}
+
+#add one location to the projects.conf,should add into the project
+sub print_one_location{
+    my ($proj,$mod_path, $mod_acl) = @_;
+    # Change HTTPD configuration file to activate access rules.
+    my $conf_add = 0;
+    my $CONF_ROOT = "/home/hg/scripts/conf";
+    open(O, ">$CONF_ROOT/projects.conf.tmp");
+    open(F, "<$CONF_ROOT/projects.conf") || error "Cannot read project conf file";
+    while (<F>) {
+    /PROJECT_BEGIN/ && do {
+        my @buf = split;
+        if ($buf[$#buf] eq $proj) {
+            $conf_add = 1;
+        }
+    };
+    
+    /PROJECT_END/ && do {
+        if ($conf_add) {
+            $conf_add = 0;
+            print O <<END;
+<Location /hg/proj/$mod_path>
+    AuthType Basic
+    AuthName "Hg-proj-$mod_path"
+    AuthUserFile $mod_acl
+    Require valid-user
+</Location>
+END
+        }
+    };
+    
+    print O;
+    }
+    close(F);
+    close(O);
+    move("$CONF_ROOT/projects.conf", "$CONF_ROOT/projects.conf.orig");
+    move("$CONF_ROOT/projects.conf.tmp", "$CONF_ROOT/projects.conf");
+    run("chown apache:apache $CONF_ROOT/projects.conf"); 
+}
+
+#when add user access right for module at the first time, we should change projects.conf
+sub print_location{
+    my ($proj, $module) = @_;
+    my $mod_path = "$proj/$module";
+    my $mod_acl = "$ROOT/acl/.htaccess-proj-$proj-$module";
+    print_one_location($proj,$mod_path,$mod_acl);
+
+    my $proj_root = "/home/hg/repos/proj/$proj";
+    opendir(DIR, $proj_root);
+    my @va;
+    my $f;
+        
+    @va = readdir(DIR);
+    closedir(DIR);
+    
+    foreach $f (@va) {
+        if(($f eq "branches") || ($f eq "releases")){
+            opendir(DIR1, "$proj_root/$f");
+            my @va1;
+            my $f1;
+            
+            @va1 = readdir(DIR1);
+            closedir(DIR1);
+            #$proj/branches/1.0/$module
+            foreach $f1 (@va1){
+                if(($f1 ne ".") && ($f1 ne "..")){
+                    $mod_path="$proj/$f/$f1/$module";
+                    print_one_location($proj,$mod_path,$mod_acl);
+                }
+            }
+        }   
+    }
+}
+
+#add the definition to the projects_conf 
+sub setup_module_access {
+    my ($proj, $module) = @_;
+
+    status "Setting up module access rules.";
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj-$module";
+    
+    # Change HTTPD configuration file to activate access rules.
+
+    my $CONF_ROOT = "/home/hg/scripts/conf";
+
+    print_location($proj,$module); 
+}
+
+
+
+# Allow a user to access one module,should include branches,releases
+sub add_module_user {
+    my ($proj,$module,$user) = @_;
+    
+    my $proj_acl = "$ROOT/acl/.htaccess-proj-$proj";
+    my $proj_mod_acl = "$ROOT/acl/.htaccess-proj-$proj-$module";
+
+    my %proj_users;
+    open(F, "<$proj_acl");
+    while (<F>) {
+        chop;
+        next if /^#/;
+        my @b = split(/:/);
+        next if (length($b[0]) == 0);
+        $proj_users{$b[0]} = $b[1];
+    }
+    
+    if(! exists $proj_users{$user}){
+        error "$user don't exist in project's userlist!";
+    }
+       
+    my %mod_users;
+    if(-e $proj_mod_acl){    
+        open(F, "<$proj_mod_acl");
+        while (<F>) {
+            chop;
+            next if /^#/;
+            my @b = split(/:/);
+            next if (length($b[0]) == 0);
+            $mod_users{$b[0]} = $b[1];
+        }
+        if(exists $mod_users{$user}){
+            error "$user exist in module's userlist now!";
+        }else{
+            $mod_users{$user} = $proj_users{$user};
+                
+            open(O, ">$proj_mod_acl.tmp");
+            foreach my $k (keys %mod_users) {
+                print O "$k:$mod_users{$k}\n";
+            }
+            close(O);
+
+            move($proj_mod_acl, "$proj_mod_acl.orig");
+            move("$proj_mod_acl.tmp", $proj_mod_acl);
+        }
+    }else{
+        open(O, ">$proj_mod_acl");
+        print O "$user:$proj_users{$user}\n";
+        close(O);
+        #should change projects_conf file here,should include branches,releases.
+        setup_module_access($proj,$module);
+    }    
+    run("chown -R apache:apache $ROOT/acl"); 
+    status "successfully add user!";   
+}
+
+# Allow a user to access one module,should include branches,releases
+sub cmd_add_moduser {
+    my ($proj) = @_;
+    if(! is_project_exist($proj)){
+        error "this project don't exist";
+    }
+    
+    error "No module is given." if (!defined($PROJ_MODULES) || length($PROJ_MODULES) <= 0);
+    if(! is_module_exist($proj,$PROJ_MODULES)){
+        error "this module don't exist";
+    }
+    error "No user is given." if (!defined($USER) || length($USER) <= 0);
+        
+    add_module_user($proj,$PROJ_MODULES,$USER);  
+}
+
+# delete a user to access one module,should include branches,releases.
+sub cmd_del_moduser {
+   my ($proj) = @_;
+    if(! is_project_exist($proj)){
+        error "this project don't exist";
+    }
+    
+    error "No module is given." if (!defined($PROJ_MODULES) || length($PROJ_MODULES) <= 0);
+    if(! is_module_exist($proj,$PROJ_MODULES)){
+        error "this module don't exist";
+    }
+     
+    my $proj_mod_acl = "$ROOT/acl/.htaccess-proj-$proj-$PROJ_MODULES";
+    error "No user is given." if (!defined($USER) || length($USER) <= 0);
+    
+    my %mod_users;
+    if(-e $proj_mod_acl){    
+        open(F, "<$proj_mod_acl");
+        while (<F>) {
+            chop;
+            next if /^#/;
+            my @b = split(/:/);
+            next if (length($b[0]) == 0);
+            $mod_users{$b[0]} = $b[1];
+        }
+        if(exists $mod_users{$USER}){
+            delete($mod_users{$USER});
+        }else{
+            error "no user exist in module's userlist!";
+        }
+                            
+        open(O, ">$proj_mod_acl.tmp");
+        foreach my $k (keys %mod_users) {
+            print O "$k:$mod_users{$k}\n";
+        }
+        close(O);
+
+        move($proj_mod_acl, "$proj_mod_acl.orig");
+        move("$proj_mod_acl.tmp", $proj_mod_acl);
+    }else{
+        error "module access right exist now";
+    }    
+    run("chown -R apache:apache $ROOT/acl"); 
+    status "successfully delete user!";
+}
+
+
+
+
+#----------------------------------------------------------------------
+# Main Program
+#----------------------------------------------------------------------
+
+my (@cmds);
+
+# Collect commands from the argument list.
+sub collect_cmds {
+    my ($cmd) = @_;
+    push(@cmds, $cmd);
+}
+
+# Setting up correct path so that python may run.
+$ENV{'PYTHON_EGG_CACHE'} = "/tmp";
+
+my $help = 0;
+my $clone_emp = 0;
+GetOptions('help' => \$help,
+       'user=s' => \$USER,
+       'src-mods=s' => \$MODULES,
+       'proj-mods=s' => \$PROJ_MODULES,
+       'clone-emp' => \$clone_emp,
+       'acl=s' => \$ACL_FILE,
+       'branch=s', => \$BRANCH,
+       'release=s' => \$RELEASEVER,	   
+       'version=s' => \$RELEASE,
+       'trac=s' => \$TRAC_SITE,
+       'root=s' => \$SERVER_ROOT,
+       '<>' => \&collect_cmds) || do {
+           usage;
+           error "Wrong arguments.";
+       };
+
+if ($help) {
+    usage;
+    exit(1);
+}
+
+unless ((-e "/home/hg") && (-e "/home/trac")) {
+    error "This script must run on the machine with Mercurial and TRAC repos.";
+}
+
+# Check commands and dispatch accordingly.
+my $proj = pop(@cmds);
+my $cmd = pop(@cmds);
+
+if (!defined($proj) || $proj eq "") {
+    usage;
+    exit 1;
+}
+
+$SERVER_ROOT = "" if (!defined($SERVER_ROOT));
+
+# Project name must be valid.
+error "Project name $proj must not contain '/', ',', '=', '#'" 
+  if ($proj =~ /[\/\#=,]/);
+
+if ($clone_emp) {
+    $MODULES = join(",", map {"emp/".$_} @EMP_MODULES);
+    status "We will import EMP modules: $MODULES.";
+}
+
+# Make sure we have one ACL file to use.
+$STDACL = 1;
+if (defined($ACL_FILE) && length($ACL_FILE) > 0) {
+    error "Specified htaccess file $ACL_FILE is not readable." 
+      unless (-r $ACL_FILE);
+    $STDACL = 0;
+}
+
+switch (lc($cmd)) {
+    case "init" { cmd_init($proj); };
+    case "clean"  { cmd_clean($proj); };
+
+    case "am"   { cmd_add_module($proj); };
+    case "dm"   { cmd_del_module($proj); };
+    case "lm"   { cmd_list_modules($proj); };
+
+    case "mr"    { cmd_make_release($proj); };
+    case "mb"    { cmd_make_branch($proj); };
+
+    case "aa"   { cmd_add_moduser($proj); };
+    case "da"   { cmd_del_moduser($proj); };
+    case "au"   { cmd_add_user($proj); };
+    case "du"   { cmd_del_user($proj); }
+    case "lu"   { cmd_list_users($proj); }
+    case "lr"   { cmd_list_releases($proj); }
+      else {
+      error "Unknown command $cmd";
+      }
+}
+
+exit(0);
